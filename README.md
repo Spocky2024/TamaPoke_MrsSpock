@@ -17,7 +17,7 @@ My version of socquique's TamaPoke, designed with a **Tamagotchi-style gameplay*
 - There are different medals.
 - The device automatically turns off to conserve battery life.
 
-Settings:
+First start:
 - Swipe down to the clock.
 - Long-tap the clock to set the time. Tap OK to save.
 - Long-tap the day to set the day of the week.
@@ -25,7 +25,7 @@ Settings:
 
 **Read more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual_5.91.pdf)**
 
-Sorry, there's no web installer yet. It hasn't been working properly.
+Sorry, there's no web installer yet.
 
 > **Personal, non-commercial fan project.** Code is MIT; the sprites are from
 > PMD SpriteCollab (CC BY-NC, Pokémon © Nintendo/Game Freak), and the 3D case is
@@ -48,13 +48,8 @@ After any ending, a **new egg** appears.
 - Board: [ESP32-S3-Touch-AMOLED-1.75](https://www.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75)
   — get the **Standard** (no case) or **-G** (GPS, also fits) version; **not the "-B"**
   (ships with a protective case that won't fit). The separate "1.75**C**" is a different
-  - **MicroSD card** (holds the sprite set — any small, class-10 card works): 🇪🇸 [.es](https://www.amazon.es/s?k=microsd+32gb&tag=capsuleradar-21) · 🇺🇸 [.com](https://www.amazon.com/s?k=microsd+32gb&tag=capsuleradar-20) · 🇩🇪 [.de](https://www.amazon.de/s?k=microsd+32gb&tag=capsulerada03-21) · 🇬🇧 [.co.uk](https://www.amazon.co.uk/s?k=microsd+32gb&tag=capsulerada0d-21) · 🇮🇹 [.it](https://www.amazon.it/s?k=microsd+32gb&tag=capsulerada08-21) · 🇫🇷 [.fr](https://www.amazon.fr/s?k=microsd+32gb&tag=capsulerada0e-21) · 🇯🇵 [.co.jp](https://www.amazon.co.jp/s?k=microsd+32gb&tag=capsuleradar-22) · 🇨🇦 [.ca](https://www.amazon.ca/s?k=microsd+32gb&tag=capsulerada09-20)
-- Round 466×466 AMOLED, **CO5300** driver (QSPI, 80 MHz)
-- Capacitive touch **CST9217** (I2C, address 0x5A)
-- **AXP2101** (power management + battery + PWR button), **PCF85063** (RTC),
-  microSD slot, **ES8311** audio codec (→ amplifier → external speaker on the
-  MX1.25 connector)
-- Pins taken from the [official Waveshare repo](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75) (see `pin_config.h`)
+- **MicroSD card** (holds the sprite set — any small, class-10 card works)
+- Akku
 
 ## Libraries (Arduino IDE / arduino-cli)
 
