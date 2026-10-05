@@ -11,6 +11,7 @@ A gen-1/2/3 Pokémon-inspired tamagotchi for the
 over QSPI, CST9217 touch over I2C).
 
 My version of socquique's TamaPoke, designed with a **Tamagotchi-style gameplay** experience in mind.
+Flash it in your browser → **[web installer](https://Spocky2024.github.io/TamaPoke_MrsSpock/web/)**
 
 - the Pokémon goes to sleep at night; you have to turn off the light until 10 p.m.; don't forget it, or things will turn out badly
 - if you don't take care of it, it's guaranteed to run away
