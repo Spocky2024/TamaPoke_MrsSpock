@@ -16,7 +16,8 @@ My version of socquique's TamaPoke, designed with a **Tamagotchi-style gameplay*
 - The clock view has been customized.
 - There are different medals.
 - The device automatically turns off to conserve battery life.
-
+- three endings: 💛 **Farewell**, 💔 **Run-away**, 👋 **Release** --> **new egg**
+  
 First start:
 - Swipe down to the clock.
 - Long-tap the clock to set the time. Tap OK to save.
@@ -33,23 +34,13 @@ Sorry, there's no web installer yet.
 
 🔴 **3D-printed Pokéball case + print profiles → [on MakerWorld](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)** 
 
-### The three endings
-- 💛 **Farewell** — when it's a **final form** that has lived **3 days**. A button
-  appears; triggering it **blesses your next egg**. You can **postpone** ("stay
-  together", re-offered in a day). The good ending.
-- 💔 **Run-away** — if you let **all four stats sit at 0 for a full hour**. A single
-  act of care cancels it. It **curses the next egg** (forces Common). The sad ending.
-- 👋 **Release** — long-press the creature to let it go on your terms (neutral).
-
-After any ending, a **new egg** appears.
-
 ## Hardware
 
 - Board: [ESP32-S3-Touch-AMOLED-1.75](https://www.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75)
   — get the **Standard** (no case) or **-G** (GPS, also fits) version; **not the "-B"**
   (ships with a protective case that won't fit). The separate "1.75**C**" is a different
 - **MicroSD card** (holds the sprite set — any small, class-10 card works)
-- Akku
+- 3,7 V lithium battery - JST 1,25
 
 ## Libraries (Arduino IDE / arduino-cli)
 
