@@ -33,7 +33,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "5.91"
+#define FW_VERSION "5.92"
 
 // paginas del pokedex: 10 para gen1 (1-151), 7 para gen2 (152-251), 9 para
 // gen3 (252-386) -- cada generacion empieza siempre en pagina nueva, no se
@@ -4513,6 +4513,21 @@ void keyboardTap(int16_t x, int16_t y) {
 #define GAL_Y 84
 #define GAL_CELL 80
 
+// Pokemon-Suche-Symbol (letzte Pokedex-Seite). Alles wird an der MITTE der
+// SICHTBAREN Grafik ausgerichtet, nicht an der Mitte des Sprite-Rasters (die
+// Grafik sitzt im Raster leicht links; das hatte das Symbol schief wirken lassen).
+//  RADAR_ART_X2/Y2 = doppelte Mitte der sichtbaren Grafik in Rasterzellen
+//  (Spalten 0..35, Zeilen 1..37 -> 36 bzw. 39)
+//  RADAR_CY: senkrechte Mitte. Frei sind die Pixelzeilen zwischen dem unteren
+//  Rand der Pokemon-Reihe 2 (y = 84 + 80 + 8 + 64 = 236) und dem oberen Rand der
+//  ersten Seitenpunkte-Reihe (y = 414 - 4 = 410) -> Mitte 323
+#define RADAR_N 39
+#define RADAR_SC 3
+#define RADAR_ART_X2 36
+#define RADAR_ART_Y2 39
+#define RADAR_CY 323
+#define RADAR_TOUCH_R 63
+
 // dibuja una miniatura centrada en su celda; sil=true la pinta en tinta
 void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
   uint8_t w = b[0], h = b[1], n = b[2];
@@ -4822,17 +4837,19 @@ void renderGallery() {
       }
     }
   }
-  // Symbol fuer die Pokemon-Suche: nur auf der letzten Seite jeder
-  // Generation (10/17/26), wo die untere Haelfte des Rasters frei bleibt
+  // Symbol fuer die Pokemon-Suche: nur auf der letzten Seite (26), wo die
+  // untere Haelfte des Rasters frei bleibt
   if (galleryPage == GAL_PAGES_TOTAL - 1) {
-    int rcx = CX, rcy = 300;
-    drawMap(SPR_RADAR, 43, rcx - 65, rcy - 65, 3, false);
+    int rcx = CX, rcy = RADAR_CY;
+    drawMap(SPR_RADAR, RADAR_N, rcx - (RADAR_ART_X2 * RADAR_SC) / 2,
+            rcy - (RADAR_ART_Y2 * RADAR_SC) / 2, RADAR_SC, false);
     // Wellen-Akzente links/rechts, je drei konzentrische Bogen-Segmente --
     // als Kette kleiner gefuellter Kreise statt duenner Linien, fuer einen
-    // kraeftigeren, runderen Strich naeher an der Vorlage
+    // kraeftigeren, runderen Strich naeher an der Vorlage. Mittelpunkt =
+    // Mitte der sichtbaren Grafik, damit beide Seiten gleich weit abstehen
     for (int side = -1; side <= 1; side += 2) {
       for (int wv = 0; wv < 3; wv++) {
-        int rad = 85 + wv * 18;
+        int rad = 77 + wv * 16;
         float aMid = (side < 0) ? (float)PI : 0.0f;
         float aSpan = 0.95f;
         int steps = 26;
@@ -4911,8 +4928,8 @@ void galleryTap(int16_t x, int16_t y) {
     return;
   }
   if (galleryPage == GAL_PAGES_TOTAL - 1) {
-    int dxr = x - CX, dyr = y - 300;
-    if (dxr * dxr + dyr * dyr <= 70 * 70) {
+    int dxr = x - CX, dyr = y - RADAR_CY;
+    if (dxr * dxr + dyr * dyr <= RADAR_TOUCH_R * RADAR_TOUCH_R) {
       int h = sceneHour();
       if (h < 8 || h >= 20) {
         sfxPlay(SFX_DENY);
