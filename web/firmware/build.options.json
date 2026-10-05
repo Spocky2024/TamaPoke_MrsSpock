@@ -1,0 +1,10 @@
+{
+  "additionalFiles": "../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..,../..",
+  "builtInLibrariesFolders": "/Users/susi/Library/Arduino15/libraries",
+  "compiler.optimization_flags": "-Os",
+  "customBuildProperties": "",
+  "fqbn": "esp32:esp32:esp32s3:UploadSpeed=921600,USBMode=hwcdc,CDCOnBoot=cdc,MSCOnBoot=default,DFUOnBoot=default,UploadMode=default,CPUFreq=240,FlashMode=qio,FlashSize=16M,PartitionScheme=app3M_fat9M_16MB,DebugLevel=none,PSRAM=opi,LoopCore=1,EventsCore=1,EraseFlash=none,JTAGAdapter=default,ZigbeeMode=default",
+  "hardwareFolders": "/Users/susi/Library/Arduino15/packages/esp32/hardware/esp32/3.3.11,/Users/susi/Library/Arduino15/packages/esp32/hardware/esp32/3.3.11",
+  "otherLibrariesFolders": "/Users/susi/Documents/Arduino/libraries",
+  "sketchLocation": "/Users/susi/Desktop/TamaPoke"
+}
