@@ -82,9 +82,7 @@ arduino-cli upload -p /dev/cu.usbmodemXXXX --fqbn "$FQBN" .
 All sprites: [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab)
 (community, CC BY-NC). Base stats: [PokéAPI](https://pokeapi.co). Pokémon is a ™ of
 Nintendo / Game Freak / The Pokémon Company. Non-commercial, personal-use project.
-Full list in [`CREDITS.md`](CREDITS.md). Version history in
-[`CHANGELOG.md`](CHANGELOG.md) — most of the fixes there came from people
-who built one and reported what they found.
+Full list in [`CREDITS.md`](CREDITS.md).
 
 ## License
 
