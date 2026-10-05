@@ -39,7 +39,7 @@ Sorry, there's no web installer yet.
 
 - Board: [ESP32-S3-Touch-AMOLED-1.75](https://www.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75)
   — get the **Standard** (no case) or **-G** (GPS, also fits) version; **not the "-B"**
-  (ships with a protective case that won't fit). The separate "1.75**C**" is a different
+  (ships with a protective case that won't fit with the 3D-printed Pokéball case). The separate "1.75**C**" is a different
 - **MicroSD card** (holds the sprite set — any small, class-10 card works)
 - 3,7 V lithium battery - JST 1,25
 
