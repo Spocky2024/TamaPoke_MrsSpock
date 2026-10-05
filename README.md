@@ -11,6 +11,7 @@ A gen-1/2/3 Pokémon-inspired tamagotchi for the
 over QSPI, CST9217 touch over I2C).
 
 My version of socquique's TamaPoke, designed with a **Tamagotchi-style gameplay** experience in mind.
+
 Flash it in your browser → **[web installer](https://Spocky2024.github.io/TamaPoke_MrsSpock/web/)**
 
 - the Pokémon goes to sleep at night; you have to turn off the light until 10 p.m.; don't forget it, or things will turn out badly
@@ -33,8 +34,6 @@ First start:
 
 **Read more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual_5.92.pdf)**
 **& [PDF Anleitung](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Spielanleitung_5.92.pdf)**
-
-Sorry, there's no web installer yet.
 
 > **Personal, non-commercial fan project.** Code is MIT; the sprites are from
 > PMD SpriteCollab (CC BY-NC, Pokémon © Nintendo/Game Freak), and the 3D case is
