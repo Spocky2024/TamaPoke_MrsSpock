@@ -1,5 +1,11 @@
 # TamaPoke
 
+[![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://spocky2024.github.io/TamaPoke_MrsSpock/web/)
+[![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
+![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
+![Languages](https://img.shields.io/badge/languages-2-FFCB05)
+[![Stars](https://img.shields.io/github/stars/Spocky2024/TamaPoke_MrsSpock?style=flat&logo=github&color=yellow)](https://github.com/Spocky2024/TamaPoke_MrsSpock/stargazers)
+
 A gen-1/2/3 Pokémon-inspired tamagotchi for the
 **Waveshare ESP32-S3-Touch-AMOLED-1.75** (round 466×466 AMOLED, CO5300 driver
 over QSPI, CST9217 touch over I2C).
