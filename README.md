@@ -24,7 +24,7 @@ First start:
 - Long-tap the day to set the day of the week.
 - adjustable brightness in clock screen (swipe left or right).
 
-**Read more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual_5.91.pdf)**
+**Read more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual_5.92.pdf)**
 
 Sorry, there's no web installer yet.
 
