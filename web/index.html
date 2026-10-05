@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TamaPoke 5.92 · Mrs. Spock - Version - Germany · Installer</title>
+<style>
+  :root { --bg:#f2efe1; --ink:#2a2a36; --accent:#4f93c4; --ok:#58b868; --bad:#e8503a; --track:#d8d2bd; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg);
+         color:var(--ink); line-height:1.6; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  h1 { font-size: 2rem; margin: 0 0 .25rem; line-height:1.25; }
+  h1 .edition { display:block; font-size:1.05rem; font-weight:500; color:#6b6b76; margin-top:.15rem; }
+  h2 { font-size: 1.25rem; margin: 2.5rem 0 .5rem; }
+  .sub { color:#6b6b76; margin: 0 0 1.5rem; }
+  .step { background:#fff; border:1px solid var(--track); border-radius:14px; padding:1.25rem 1.5rem; margin: 1rem 0; }
+  .num { display:inline-flex; width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+         align-items:center; justify-content:center; font-weight:600; margin-right:.5rem; font-size:.9rem; }
+  button { font: inherit; font-weight:500; padding:.6rem 1.2rem; border-radius:10px; border:1px solid var(--ink);
+           background:#fff; cursor:pointer; }
+  button:hover { background:var(--bg); }
+  button:disabled { opacity:.5; cursor:default; }
+  button.link { border:none; background:none; padding:0; text-decoration:underline; color:var(--accent); font-weight:400; font-size:.9rem; }
+  esp-web-install-button { display:inline-block; }
+  esp-web-install-button[install-unsupported] { display:none; }
+  .unsupported { display:none; color:var(--bad); font-weight:500; }
+  .row { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; }
+  #log { font-family: ui-monospace, monospace; font-size:.85rem; background:#1b1b25; color:#d8dcf0;
+         border-radius:10px; padding:.75rem 1rem; margin-top:1rem; max-height:220px; overflow:auto; white-space:pre-wrap; display:none; }
+  .pack { border:1px solid var(--track); border-radius:12px; padding:.85rem 1rem; margin:.75rem 0; background:#fcfbf6; }
+  .pack-top { display:flex; gap:.75rem; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
+  .pack-title { font-weight:600; }
+  .pack-what { font-size:.92rem; color:#4b4b57; }
+  .pack-size { font-size:.85rem; color:#6b6b76; white-space:nowrap; }
+  .pack-status { font-size:.9rem; margin-top:.4rem; color:#6b6b76; word-break:break-word; }
+  .pack-status.ok { color:#2f7d3e; font-weight:500; }
+  .pack-status.bad { color:#b3341f; font-weight:500; }
+  .bar { height:10px; background:var(--track); border-radius:5px; overflow:hidden; margin-top:.5rem; }
+  .bar > div { height:100%; width:0; background:var(--ok); transition: width .15s; }
+  code { background:#0001; padding:.1em .4em; border-radius:5px; }
+  a { color:var(--accent); }
+  .note { font-size:.9rem; color:#6b6b76; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🖖 TamaPoke <span id="ver">5.92</span>
+    <span class="edition">Mrs. Spock - Version - Germany</span></h1>
+  <p class="sub">A 386-Pokémon tamagotchi for the Waveshare ESP32-S3-Touch-AMOLED-1.75.
+     Install it from your browser — no Arduino, no drivers.</p>
+
+  <p class="unsupported" id="unsupported">
+    ⚠️ Your browser doesn't support Web Serial. Use <b>Chrome</b> or <b>Edge</b> on a computer.
+  </p>
+
+  <h2><span class="num">1</span>Flash the firmware</h2>
+  <div class="step">
+    <p>Plug the board in via USB and press install. Pick the port and wait.</p>
+    <esp-web-install-button manifest="manifest.json">
+      <button slot="activate">⚡ Install TamaPoke</button>
+      <span slot="unsupported">Browser not supported (use Chrome/Edge).</span>
+      <span slot="not-allowed">Needs HTTPS.</span>
+    </esp-web-install-button>
+    <p class="note">🔄 <b>Updating to a new version? Install <u>without</u> erasing</b> to keep
+       your Pokémon — the save lives in flash and the sprites on the microSD, so a normal
+       install keeps both. Only a full <b>Erase</b> wipes your saved pet (the SD sprites
+       survive even that). First time on a fresh board? You can erase, no problem.</p>
+  </div>
+
+  <h2><span class="num">2</span>Load the sprites onto the microSD</h2>
+  <div class="step">
+    <p>Put a microSD into the board (it formats itself). Press <b>Connect board</b>, then load the
+       <b>three sprite packs</b> one after another — about <span id="totalmb">136</span> MB in total,
+       roughly 20 minutes. Don't remove the card.</p>
+    <p class="note">Close the step-1 install tab first (only one program can use
+       the port at a time).</p>
+    <p class="note">⏱️ The board switches itself off after 5 minutes without a touch, even on USB.
+       <b>Tap its screen every few minutes</b> while loading. If a pack gets interrupted anyway
+       (or the board switched off), switch it on again with PWR, press <b>Connect board</b>
+       and press the button of <b>that pack</b> only: it continues where it stopped,
+       and the other packs don't have to be repeated.</p>
+    <div class="row">
+      <button id="connect">🔌 Connect board</button>
+      <span class="note" id="conn">Not connected.</span>
+    </div>
+    <div id="packs"></div>
+    <p class="note" id="alldone" style="display:none"></p>
+    <pre id="log"></pre>
+  </div>
+
+  <h2>How to play</h2>
+  <p>Read in the <a href="https://github.com/Spocky2024/TamaPoke_MrsSpock" target="_blank" rel="noopener">repository</a>.</p>
+
+  <p class="note">Sprites from <a href="https://github.com/PMDCollab/SpriteCollab" target="_blank">PMD SpriteCollab</a> (CC BY-NC).
+     Pokémon is a ™ of Nintendo / Game Freak. Non-commercial project.</p>
+</div>
+
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
+<script>
+// ======================================================================
+//  The three sprite packs (TPAK bundles). Sizes are the real file sizes.
+//  thumbs: only the pack that carries the COMPLETE Pokédex thumbnails
+//  (386 entries) may write mons/thumbs.bin. The other two contain an older,
+//  shorter version (251 entries); skipping theirs means the loading order
+//  and repeating a pack can never overwrite the complete one.
+// ======================================================================
+const PACKS = [
+  { file: 'sprites.pak',             label: 'Pack 1 of 3', what: 'Pokémon #1–251 (Generations 1 & 2)',                           mb: 70, thumbs: false },
+  { file: 'sprites-gen2-update.pak', label: 'Pack 2 of 3', what: 'Generation 2 update · Pokémon #161–251',                       mb: 26, thumbs: false },
+  { file: 'sprites-gen3-update.pak', label: 'Pack 3 of 3', what: 'Generation 3 · Pokémon #252–386, plus the Pokédex thumbnails', mb: 40, thumbs: true  },
+];
+// Timing in ms. The firmware gives up on a stalled transfer after 5 s.
+const T = { start: 8000, ack: 8000, done: 30000, resync: 6500, quiet: 500 };
+
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const log = (m) => { const el = $('log'); el.style.display = 'block';
+  el.textContent += m + '\n'; el.scrollTop = el.scrollHeight; };
+
+// version in the heading follows manifest.json (the static text is the fallback)
+fetch('manifest.json').then((r) => r.json()).then((m) => {
+  if (m && m.version) { $('ver').textContent = m.version;
+    document.title = 'TamaPoke ' + m.version + ' · Mrs. Spock - Version - Germany · Installer'; }
+}).catch(() => {});
+$('totalmb').textContent = PACKS.reduce((a, p) => a + p.mb, 0);
+
+const supported = 'serial' in navigator;
+if (!supported) { $('unsupported').style.display = 'block'; $('connect').disabled = true; }
+
+// ---------------------------------------------------------------- serial layer
+let port = null, reader = null, writer = null, lineBuf = '', pendingRead = null;
+let connected = false, busy = false;
+const enc = new TextEncoder(), dec = new TextDecoder();
+
+// Exactly one read() is pending at a time. If a wait times out, that read stays
+// pending for the next call, so no incoming byte is ever lost.
+async function pump(timeoutMs) {
+  if (!pendingRead) pendingRead = reader.read();
+  let timer;
+  const timeout = new Promise((r) => { timer = setTimeout(() => r('timeout'), timeoutMs); });
+  let res;
+  try { res = await Promise.race([pendingRead, timeout]); } finally { clearTimeout(timer); }
+  if (res === 'timeout') return;
+  pendingRead = null;
+  if (res.done) throw new Error('port closed');
+  lineBuf += dec.decode(res.value, { stream: true });
+}
+
+async function readLine(timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const nl = lineBuf.indexOf('\n');
+    if (nl >= 0) { const l = lineBuf.slice(0, nl).trim(); lineBuf = lineBuf.slice(nl + 1); return l; }
+    const left = deadline - Date.now();
+    if (left <= 0) return null;
+    await pump(left);
+  }
+}
+
+// -> 'ok' | 'err' | 'timeout'
+async function waitFor(token, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const l = await readLine(Math.max(0, deadline - Date.now()));
+    if (l === null) return 'timeout';
+    if (l === token) return 'ok';
+    if (l === 'ERR') return 'err';   // other lines (boot messages, HEALTH ...) are ignored
+  }
+}
+
+// After an aborted transfer the firmware is still waiting for data. It gives up
+// after 5 s and answers ERR; only then does it accept commands again.
+async function resync() {
+  await sleep(T.resync);
+  for (;;) { const l = await readLine(T.quiet); if (l === null) break; }
+  lineBuf = '';
+}
+
+// sends one file with the PUT protocol -> { ok:true } | { ok:false, why }
+async function sendOne(name, data) {
+  await writer.write(enc.encode(`PUT ${name} ${data.length}\n`));
+  let r = await waitFor('OK', T.start);
+  if (r === 'err') return { ok: false, why: 'The board refused the file (is the microSD inserted?)', sync: false };
+  if (r !== 'ok') return { ok: false, why: 'The board stopped answering (did it switch itself off?)', sync: true };
+  for (let i = 0; i < data.length; i += 2048) {
+    await writer.write(data.slice(i, i + 2048));
+    r = await waitFor('#', T.ack);
+    if (r !== 'ok') return { ok: false, why: 'The transfer stalled', sync: true };
+  }
+  r = await waitFor('DONE', T.done);
+  if (r !== 'ok') return { ok: false, why: 'The board did not confirm the file', sync: true };
+  return { ok: true };
+}
+
+async function closePort() {
+  connected = false; pendingRead = null; lineBuf = '';
+  try { if (reader) await reader.cancel(); } catch (e) {}
+  try { if (reader) reader.releaseLock(); } catch (e) {}
+  try { if (writer) writer.releaseLock(); } catch (e) {}
+  try { if (port) await port.close(); } catch (e) {}
+  reader = writer = port = null;
+}
+
+function connectionLost(why) {
+  if (!connected && !port) return;
+  log('Connection lost' + (why ? ': ' + why : '') + '. Switch the board on (PWR), then press "Connect board".');
+  closePort().then(refresh);
+}
+if (supported) navigator.serial.addEventListener('disconnect', (e) => { if (!port || e.target === port) connectionLost('USB cable removed or board switched off'); });
+
+// ---------------------------------------------------------------- packs
+function parsePak(buf) {
+  const dv = new DataView(buf), td = new TextDecoder();
+  if (buf.byteLength < 6 || td.decode(new Uint8Array(buf, 0, 4)) !== 'TPAK') throw new Error('invalid bundle');
+  const count = dv.getUint16(4, true);
+  let off = 6; const items = [];
+  for (let i = 0; i < count; i++) {
+    const nl = dv.getUint8(off); off += 1;
+    const name = td.decode(new Uint8Array(buf, off, nl)); off += nl;
+    const size = dv.getUint32(off, true); off += 4;
+    items.push({ name, size });
+  }
+  let pos = off;
+  for (const it of items) {
+    if (pos + it.size > buf.byteLength) throw new Error('download incomplete');
+    it.data = new Uint8Array(buf, pos, it.size); pos += it.size;
+  }
+  return items;
+}
+
+async function fetchPack(p) {
+  const resp = await fetch(p.file);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const items = parsePak(await resp.arrayBuffer());
+  if (p.thumbs) return items;
+  const kept = items.filter((it) => it.name !== 'mons/thumbs.bin');
+  if (kept.length !== items.length) log(`${p.file}: older thumbs.bin skipped (pack 3 carries the complete one)`);
+  return kept;
+}
+
+// per-pack state: items = parsed files (kept after an interruption so a retry
+// needs no new download), next = index of the next file to send
+const S = PACKS.map(() => ({ items: null, next: 0, state: 'idle' }));
+
+function el(tag, cls) { const e = document.createElement(tag); if (cls) e.className = cls; return e; }
+
+function buildRows() {
+  const host = $('packs');
+  PACKS.forEach((p, i) => {
+    const row = el('div', 'pack');
+    const top = el('div', 'pack-top');
+    const left = el('div');
+    const title = el('div', 'pack-title'); title.textContent = p.label;
+    const what = el('div', 'pack-what'); what.textContent = p.what + ' · ≈ ' + p.mb + ' MB';
+    left.appendChild(title); left.appendChild(what);
+    const btn = el('button'); btn.onclick = () => runPack(i, false);
+    top.appendChild(left); top.appendChild(btn);
+    const status = el('div', 'pack-status');
+    const again = el('button', 'link'); again.textContent = 'start this pack over'; again.style.display = 'none';
+    again.onclick = () => { S[i].next = 0; S[i].state = 'idle'; setStatus(i, 'Not loaded yet.'); refresh(); };
+    const bar = el('div', 'bar'); const fill = el('div'); bar.appendChild(fill);
+    row.appendChild(top); row.appendChild(status); row.appendChild(again); row.appendChild(bar);
+    host.appendChild(row);
+    p.ui = { btn, status, again, fill };
+    setStatus(i, 'Not loaded yet.');
+  });
+  refresh();
+}
+
+function setStatus(i, text, cls) { const s = PACKS[i].ui.status; s.textContent = text; s.className = 'pack-status' + (cls ? ' ' + cls : ''); }
+function setBar(i, frac) { PACKS[i].ui.fill.style.width = Math.round(frac * 100) + '%'; }
+
+function refresh() {
+  PACKS.forEach((p, i) => {
+    const s = S[i], b = p.ui.btn;
+    b.textContent = s.state === 'done' ? `↻ Load pack ${i + 1} again`
+                  : (s.state === 'failed' && s.next > 0) ? `▶️ Continue pack ${i + 1}`
+                  : `⬇️ Load pack ${i + 1}`;
+    b.disabled = !connected || busy;
+    p.ui.again.style.display = (s.state === 'failed' && s.next > 0 && !busy) ? 'inline' : 'none';
+  });
+  $('connect').textContent = connected ? '🔌 Reconnect board' : '🔌 Connect board';
+  $('connect').disabled = !supported || busy;
+  $('conn').textContent = connected ? 'Connected.' : 'Not connected.';
+  const all = S.every((s) => s.state === 'done');
+  $('alldone').style.display = all ? 'block' : 'none';
+  if (all) $('alldone').textContent = '✅ All three packs are on the card. Now restart the board: hold PWR to switch it off, then press PWR again.';
+}
+
+async function runPack(i, fromStart) {
+  if (busy || !connected) return;
+  const p = PACKS[i], s = S[i];
+  if (fromStart) s.next = 0;
+  busy = true; s.state = 'busy'; refresh();
+  let k = s.next;
+  try {
+    if (!s.items) {
+      setStatus(i, `Downloading ${p.file} (≈ ${p.mb} MB) …`);
+      s.items = await fetchPack(p);
+      log(`${p.file}: ${s.items.length} files.`);
+    }
+    const items = s.items;
+    setBar(i, k / items.length);
+    for (; k < items.length; k++) {
+      setStatus(i, `Sending file ${k + 1} of ${items.length} · ${items[k].name}`);
+      const r = await sendOne(items[k].name, items[k].data);
+      if (!r.ok) {
+        s.state = 'failed'; s.next = k;
+        const msg = `Interrupted at file ${k + 1} of ${items.length} (${items[k].name}). ${r.why}.`;
+        log(`${p.file}: ${msg}`);
+        if (r.sync) { setStatus(i, msg + ' Re-synchronising with the board …', 'bad'); await resync(); }
+        setStatus(i, msg + ' Press the button to continue from this file.', 'bad');
+        return;
+      }
+      s.next = k + 1;
+      setBar(i, (k + 1) / items.length);
+    }
+    const n = items.length;
+    s.state = 'done'; s.items = null; s.next = 0;
+    setStatus(i, `✓ Loaded (${n} files).`, 'ok'); setBar(i, 1);
+    log(`${p.file}: done.`);
+  } catch (e) {
+    s.state = (s.items && k > 0) ? 'failed' : 'idle'; s.next = (s.items ? k : 0);
+    const msg = s.items ? `Interrupted at file ${k + 1} of ${s.items.length}: ${e.message}.`
+                        : `Could not download ${p.file}: ${e.message}.`;
+    log(`${p.file}: ${msg}`);
+    setStatus(i, msg + (s.items ? ' Press the button to continue from this file.' : ' Press the button to try again.'), 'bad');
+    if (s.items) connectionLost(e.message);
+  } finally {
+    busy = false; refresh();
+  }
+}
+
+$('connect').onclick = async () => {
+  if (busy) return;
+  try {
+    if (port) await closePort();
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    reader = port.readable.getReader();
+    writer = port.writable.getWriter();
+    lineBuf = ''; pendingRead = null; connected = true;
+    log('Connected. Press the button of the pack you want to load.');
+  } catch (e) {
+    log('Could not connect: ' + e.message);
+    if (port && !connected) { try { await port.close(); } catch (x) {} port = null; }
+  }
+  refresh();
+};
+window.addEventListener('beforeunload', (e) => { if (busy) { e.preventDefault(); e.returnValue = ''; } });
+
+buildRows();
+</script>
+</body>
+</html>
