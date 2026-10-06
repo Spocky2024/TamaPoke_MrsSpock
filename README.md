@@ -29,6 +29,10 @@ Flash it in your browser → **[web installer](https://Spocky2024.github.io/Tama
 |---|---|---|
 | <img src="pics/1.png" width="240"> | <img src="pics/2.png" width="240"> | <img src="pics/3.png" width="240"> |
 
+| Stages & Favorites | automatic Battle | x |
+|---|---|---|
+| <img src="pics/4.png" width="240"> | <img src="pics/5.png" width="240"> | <img src="pics/6.png" width="240"> |
+  
   
 First start:
 - swipe down to the clock screen
