@@ -12,6 +12,8 @@ over QSPI, CST9217 touch over I2C).
 
 My version of socquique's TamaPoke, designed with a **Tamagotchi-style gameplay** experience in mind.
 
+**Languages English and German.**
+
 Flash it in your browser → **[web installer](https://Spocky2024.github.io/TamaPoke_MrsSpock/web/)**
 
 - the Pokémon goes to sleep at night; you have to turn off the light until 10 p.m.; don't forget it, or things will turn out badly
@@ -29,9 +31,13 @@ Flash it in your browser → **[web installer](https://Spocky2024.github.io/Tama
 |---|---|---|
 | <img src="pics/1.png" width="240"> | <img src="pics/2.png" width="240"> | <img src="pics/3.png" width="240"> |
 
-| Stages & Favorites | automatic Battle | x |
+| Stages & Favorites | automatic Battle | Pedometer Mode |
 |---|---|---|
 | <img src="pics/4.png" width="240"> | <img src="pics/5.png" width="240"> | <img src="pics/6.png" width="240"> |
+
+| Pokemon Trip | Events | Meet Pokemons |
+|---|---|---|
+| <img src="pics/7.png" width="240"> | <img src="pics/8.png" width="240"> | <img src="pics/9.png" width="240"> |
   
   
 First start:
