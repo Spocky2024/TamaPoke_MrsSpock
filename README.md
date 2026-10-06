@@ -25,7 +25,7 @@ Flash it in your browser → **[web installer](https://Spocky2024.github.io/Tama
 - two devices can connect via Bluetooth
 - three endings: 💛 **Farewell**, 💔 **Run-away**, 👋 **Release** --> **new egg**
 
-| Clock screen | automatic Battle | Stages & Favorites |
+| Clock screens | Clock screens | Clock screens |
 |---|---|---|
 | <img src="pics/1.png" width="240"> | <img src="pics/2.png" width="240"> | <img src="pics/3.png" width="240"> |
 
