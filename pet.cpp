@@ -1155,7 +1155,8 @@ SleepAction Pet::sleepTap() {
       // las 8:00 sirve mientras tanto. EXCEPCION: si la energia ya cayo por
       // debajo de 25, se permite un Power-Nap tambien en esta franja
       if (h >= 6 && h < 8) {
-        if (energy < 25 && !napping() && !cooldownActive(napCooldownUntilEpoch)) {
+        if (energy < 25 && !napping()) {
+          if (cooldownActive(napCooldownUntilEpoch)) return SLEEP_NAP_COOLDOWN;
           napUntil = millis() + 10000UL;
           return SLEEP_NAP_START;
         }
@@ -1186,7 +1187,7 @@ SleepAction Pet::sleepTap() {
   // 08:00-19:59: power-nap (antes terminaba a las 17:59; la franja muerta
   // 18-20h se elimino, ahora tambien es zona de nap)
   if (napping()) return SLEEP_NOT_YET;  // en curso: ya no se puede interrumpir
-  if (cooldownActive(napCooldownUntilEpoch)) return SLEEP_NOT_YET;
+  if (cooldownActive(napCooldownUntilEpoch)) return SLEEP_NAP_COOLDOWN;
   if (energy > 80) return SLEEP_NOT_YET;
   napUntil = millis() + 10000UL;  // 10 segundos
   return SLEEP_NAP_START;

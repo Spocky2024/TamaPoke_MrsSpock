@@ -27,7 +27,8 @@ enum SleepAction : uint8_t {
   SLEEP_LIGHTS_OUT,   // luz apagada, a dormir
   SLEEP_LIGHTS_ON,    // luz encendida, despierto
   SLEEP_NAP_START,    // power-nap iniciado
-  SLEEP_NOT_YET,      // power-nap pedido pero no toca aun (cansancio/cooldown/en curso)
+  SLEEP_NOT_YET,      // power-nap pedido pero no toca aun (cansancio/en curso)
+  SLEEP_NAP_COOLDOWN, // power-nap: el cooldown de 60 min aun no ha pasado
   SLEEP_BLOCKED,      // luz: no se puede despertar entre 22-6 (silencioso, sin aviso)
   SLEEP_CONFIRM_NEEDED,  // dormir manual entre 20-22h: la UI debe preguntar antes
 };

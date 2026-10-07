@@ -33,7 +33,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "5.92"
+#define FW_VERSION "5.94"
 
 // paginas del pokedex: 10 para gen1 (1-151), 7 para gen2 (152-251), 9 para
 // gen3 (252-386) -- cada generacion empieza siempre en pagina nueva, no se
@@ -1727,7 +1727,7 @@ void onTap(int16_t x, int16_t y) {
           sfxPlay(SFX_DENY);  // kugelrund: keine chuches mas
         }
       } else if (pet.berryOnCooldown()) {
-        sleepMsgId = S_NOT_YET; sleepMsgUntil = millis() + 2500;
+        sleepMsgId = S_BERRY_CD; sleepMsgUntil = millis() + 2500;
         sfxPlay(SFX_DENY);  // Cooldown von 5 Minuten zwischen Beeren noch nicht um
       } else if (pet.feedBerry(item)) {
         sfxPlay(SFX_EAT);
@@ -1803,6 +1803,8 @@ void onTap(int16_t x, int16_t y) {
             sleepMsgId = S_NAP; sleepMsgUntil = millis() + 2000; break;
           case SLEEP_NOT_YET:
             sleepMsgId = S_NOT_YET; sleepMsgUntil = millis() + 2500; sfxPlay(SFX_DENY); break;
+          case SLEEP_NAP_COOLDOWN:
+            sleepMsgId = S_NAP_CD; sleepMsgUntil = millis() + 2500; sfxPlay(SFX_DENY); break;
           case SLEEP_BLOCKED:
             sfxPlay(SFX_DENY); break;
           case SLEEP_CONFIRM_NEEDED:
@@ -4515,18 +4517,19 @@ void keyboardTap(int16_t x, int16_t y) {
 
 // Pokemon-Suche-Symbol (letzte Pokedex-Seite). Alles wird an der MITTE der
 // SICHTBAREN Grafik ausgerichtet, nicht an der Mitte des Sprite-Rasters (die
-// Grafik sitzt im Raster leicht links; das hatte das Symbol schief wirken lassen).
+// Grafik sitzt im Raster leicht links; das laesst das Symbol sonst schief wirken).
 //  RADAR_ART_X2/Y2 = doppelte Mitte der sichtbaren Grafik in Rasterzellen
-//  (Spalten 0..35, Zeilen 1..37 -> 36 bzw. 39)
+//  (Spalten 0..39, Zeilen 1..41 -> 40 bzw. 43)
 //  RADAR_CY: senkrechte Mitte. Frei sind die Pixelzeilen zwischen dem unteren
 //  Rand der Pokemon-Reihe 2 (y = 84 + 80 + 8 + 64 = 236) und dem oberen Rand der
-//  ersten Seitenpunkte-Reihe (y = 414 - 4 = 410) -> Mitte 323
-#define RADAR_N 39
+//  ersten Seitenpunkte-Reihe (y = 414 - 4 = 410) -> Mitte 323. Seit v5.94 um
+//  8 Pixel (ca. eine Punkthoehe) hoeher: 315
+#define RADAR_N 43
 #define RADAR_SC 3
-#define RADAR_ART_X2 36
-#define RADAR_ART_Y2 39
-#define RADAR_CY 323
-#define RADAR_TOUCH_R 63
+#define RADAR_ART_X2 40
+#define RADAR_ART_Y2 43
+#define RADAR_CY 315
+#define RADAR_TOUCH_R 70
 
 // dibuja una miniatura centrada en su celda; sil=true la pinta en tinta
 void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
@@ -4843,20 +4846,21 @@ void renderGallery() {
     int rcx = CX, rcy = RADAR_CY;
     drawMap(SPR_RADAR, RADAR_N, rcx - (RADAR_ART_X2 * RADAR_SC) / 2,
             rcy - (RADAR_ART_Y2 * RADAR_SC) / 2, RADAR_SC, false);
-    // Wellen-Akzente links/rechts, je drei konzentrische Bogen-Segmente --
-    // als Kette kleiner gefuellter Kreise statt duenner Linien, fuer einen
-    // kraeftigeren, runderen Strich naeher an der Vorlage. Mittelpunkt =
-    // Mitte der sichtbaren Grafik, damit beide Seiten gleich weit abstehen
+    // Wellen-Akzente links/rechts, je drei konzentrische Boegen aus kurzen,
+    // duennen Liniensegmenten (1 Pixel). Mittelpunkt = Mitte der sichtbaren
+    // Grafik, damit beide Seiten gleich weit abstehen
     for (int side = -1; side <= 1; side += 2) {
       for (int wv = 0; wv < 3; wv++) {
-        int rad = 77 + wv * 16;
+        int rad = 85 + wv * 18;
         float aMid = (side < 0) ? (float)PI : 0.0f;
         float aSpan = 0.95f;
-        int steps = 26;
+        int steps = 8;
+        int px = -1, py = -1;
         for (int st = 0; st <= steps; st++) {
           float a = aMid - aSpan / 2 + aSpan * st / steps;
           int qx = rcx + (int)(cosf(a) * rad), qy = rcy + (int)(sinf(a) * rad);
-          gfx->fillCircle(qx, qy, 4, UI_INK);
+          if (px >= 0) gfx->drawLine(px, py, qx, qy, UI_INK);
+          px = qx; py = qy;
         }
       }
     }
@@ -5246,7 +5250,7 @@ void drawPet() {
 void startBath() {
   if (pet.isEgg() || pet.sleeping || pet.napping() || pet.blocked() || bathUntil) return;
   if (pet.poops == 0 && pet.hygiene >= 25 && pet.bathOnCooldown()) {
-    sleepMsgId = S_NOT_YET; sleepMsgUntil = millis() + 2500;
+    sleepMsgId = S_BATH_CD; sleepMsgUntil = millis() + 2500;
     sfxPlay(SFX_DENY);
     return;
   }
