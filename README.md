@@ -12,20 +12,22 @@ over QSPI, CST9217 touch over I2C).
 
 My version of socquique's TamaPoke, designed with a **Tamagotchi-style gameplay** experience in mind.
 
-**Languages English and German.**
+Languages **English** and **German**.
 
 Flash it in your browser → **[web installer](https://Spocky2024.github.io/TamaPoke_MrsSpock/web/)**
 
+- 386 Pokemon from the first to the third generation 
 - the Pokémon goes to sleep at night; you have to turn off the light until 10 p.m.; don't forget it, or things will turn out badly
-- if you don't take care of it, it's guaranteed to run away
+- if you don't take care of it, it's guaranteed to run away - like a Tamagotchi
 - you can collect steps with your Pokémon or send it out alone for 30–60 minutes of random events. You can encounter new Pokémon on your adventures to complete the Pokédex and find Magic Berries
 - there are different Stages depending on how full your Pokédex is (Example: Stage 1 Novice)
 - Revised Pokédex (tap briefly on a Pokémon in the Pokédex to view its detail; tap and hold on a Pokémon in the Pokédex to mark it as a Favorite (Favorites can hatch from eggs with little luck; up to three favourites), the medals you've won are recorded in the Pokédex for each Pokémon)
 - the watch face has been redesigned
 - new medals and an increasing amount of time are required to level up
-- the device automatically turns off to conserve battery life
+- the device **automatically turns off** after five minutes to conserve battery life (except for pedometer mode = screen off only)
 - two devices can connect via Bluetooth
 - three endings: 💛 **Farewell**, 💔 **Run-away**, 👋 **Release** --> **new egg**
+- no flickering screen and comfortable touch zones
 
 | Clock screens | Clock screens | Clock screens |
 |---|---|---|
