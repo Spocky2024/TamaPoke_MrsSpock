@@ -31,23 +31,23 @@ Flash it in your browser → **[web installer](https://Spocky2024.github.io/Tama
 |---|---|---|
 | <img src="pics/1.png" width="240"> | <img src="pics/2.png" width="240"> | <img src="pics/3.png" width="240"> |
 
-| Pedometer Mode | Pokemon Trip | Meet Pokemons |
+| Pedometer Mode | Pokemon Trip | Meet a other Pokemon |
 |---|---|---|
 | <img src="pics/4.png" width="240"> | <img src="pics/5.png" width="240"> | <img src="pics/6.png" width="240"> |
 
-| Eventss | Eventsggg | Meet Pokemons |
+| Events | Overview | eat a Magic Berry |
 |---|---|---|
 | <img src="pics/7.png" width="240"> | <img src="pics/8.png" width="240"> | <img src="pics/9.png" width="240"> |
 
-| Clock screens | Clock screens | Clock screens |
+| connect two devices | automatic Battle | automatic Battle |
 |---|---|---|
 | <img src="pics/10.png" width="240"> | <img src="pics/11.png" width="240"> | <img src="pics/12.png" width="240"> |
 
-| Stages & Favorites | automatic Battle | Pedometer Mode |
+| Pokedex Overview & Favorites | Pokedex | Pokemon Medals |
 |---|---|---|
 | <img src="pics/13.png" width="240"> | <img src="pics/14.png" width="240"> | <img src="pics/15.png" width="240"> |
 
-| Pokemon Trip | Events | Meet Pokemons |
+| Pokemon Details | turn off Light | have FUN |
 |---|---|---|
 | <img src="pics/16.png" width="240"> | <img src="pics/17.png" width="240"> | <img src="pics/18.png" width="240"> |
   
