@@ -61,7 +61,7 @@ First start:
 - adjustable brightness in clock screen (swipe left or right)
 
 **Read more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual_5.92.pdf)**
-**& [PDF Anleitung](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Spielanleitung_5.92.pdf)**
+**or [PDF Anleitung](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Spielanleitung_5.92.pdf)**
 
 > **Personal, non-commercial fan project.** Code is MIT; the sprites are from
 > PMD SpriteCollab (CC BY-NC, Pokémon © Nintendo/Game Freak), and the 3D case is
