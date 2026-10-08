@@ -4,6 +4,7 @@
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
 ![Languages](https://img.shields.io/badge/languages-2-FFCB05)
+![Code](https://img.shields.io/badge/code-MIT-blue)
 [![Stars](https://img.shields.io/github/stars/Spocky2024/TamaPoke_MrsSpock?style=flat&logo=github&color=yellow)](https://github.com/Spocky2024/TamaPoke_MrsSpock/stargazers)
 
 A gen-1/2/3 Pokémon-inspired tamagotchi for the
