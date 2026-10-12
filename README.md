@@ -11,7 +11,8 @@ A gen-1/2/3 Pokémon-inspired tamagotchi for the
 **Waveshare ESP32-S3-Touch-AMOLED-1.75** (round 466×466 AMOLED, CO5300 driver
 over QSPI, CST9217 touch over I2C).
 
-My version of socquique's TamaPoke, designed with a **Tamagotchi-style gameplay** experience in mind.
+My version of Socquique's **[TamaPoke](https://github.com/socquique/TamaPoke)**, designed with a **Tamagotchi-style gameplay**.
+It also includes Code of Crenberries428's **[TamaPoke](https://github.com/crenberries428/TamaPoke)**.
 
 Languages **English** and **German**.
 
@@ -101,10 +102,10 @@ arduino-cli compile --fqbn "$FQBN" .
 arduino-cli upload -p /dev/cu.usbmodemXXXX --fqbn "$FQBN" .
 ```
 
-## Community forks
+## Community forks of Socquique's **[TamaPoke](https://github.com/socquique/TamaPoke)** Original
 
-- **[TamaPoke — Expanded](https://github.com/ShadowEnemyx/TamaPoke/tree/tamapoke-expanded-update)** by **ShadowEnemy** — a substantial community fork (different author/branch): a full **type-matchup battle system**, all **151 + shinies** with a **Pokédex / collection box** and daily goals, **6 UI languages**, **ES8311 sound**, starter choice and a one-click web installer. Worth a look. 🎮
-- **[TamaPoke](https://github.com/DylanPDao/TamaPoke)** by **DylanPDao** — another substantial fork: **gym battles** and **LAN battles** between two devices, **movesets**, a **party + box** system, an **EV/IV** stat system, and coverage extended **up to Gen 3 (386)**. Keeps the PMD sprite pipeline. 🏆
+- **[TamaPoke](https://github.com/DylanPDao/TamaPoke)** by **DylanPDao** with Battle System
+- **[TamaPoke](https://github.com/crenberries428/TamaPoke)** by **Crenberries428** with Battle System and alternative Backgrounds
 
 ## Credits
 
