@@ -11,7 +11,7 @@ A gen-1/2/3 Pokémon-inspired tamagotchi for the
 **Waveshare ESP32-S3-Touch-AMOLED-1.75** (round 466×466 AMOLED, CO5300 driver
 over QSPI, CST9217 touch over I2C).
 
-My version of Socquique's **[TamaPoke](https://github.com/socquique/TamaPoke)**, designed with a **Tamagotchi-style gameplay**.
+My version of Socquique's **[TamaPoke](https://github.com/socquique/TamaPoke)**, designed with a **Tamagotchi-style gameplay**.<br>
 It also includes Code of Crenberries428's **[TamaPoke](https://github.com/crenberries428/TamaPoke)**.
 
 Languages **English** and **German**.
@@ -102,7 +102,7 @@ arduino-cli compile --fqbn "$FQBN" .
 arduino-cli upload -p /dev/cu.usbmodemXXXX --fqbn "$FQBN" .
 ```
 
-## Community forks of Socquique's **[TamaPoke](https://github.com/socquique/TamaPoke)** Original
+## Other Community forks of Socquique's **[TamaPoke](https://github.com/socquique/TamaPoke)** Original
 
 - **[TamaPoke](https://github.com/DylanPDao/TamaPoke)** by **DylanPDao** with Battle System
 - **[TamaPoke](https://github.com/crenberries428/TamaPoke)** by **Crenberries428** with Battle System and alternative Backgrounds
