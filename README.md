@@ -16,7 +16,9 @@ It also includes Code of Crenberries428's **[TamaPoke](https://github.com/crenbe
 
 Languages **English** and **German**.
 
-Flash it in your browser → **[web installer](https://Spocky2024.github.io/TamaPoke_MrsSpock/web/)**
+Flash it in your browser → **[web installer](https://Spocky2024.github.io/TamaPoke_MrsSpock/web/)**<br>
+**Read more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual.pdf)**
+**or [PDF Anleitung](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Anleitung.pdf)**
 
 - 386 Pokemon from the first to the third generation 
 - the Pokémon goes to sleep at night; you have to turn off the light until 10 p.m.; don't forget it, or things will turn out badly
