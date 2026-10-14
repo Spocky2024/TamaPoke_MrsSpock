@@ -53,6 +53,10 @@ Flash it in your browser → **[web installer](https://Spocky2024.github.io/Tama
 |---|---|---|
 | <img src="pics/13.png" width="240"> | <img src="pics/14.png" width="240"> | <img src="pics/15.png" width="240"> |
 
+| Medals | Fighting and Bluetooth | Pokemon Status |
+|---|---|---|
+| <img src="pics/21.png" width="240"> | <img src="pics/20.png" width="240"> | <img src="pics/19.png" width="240"> |
+
 | Pokemon Details | turn off Light | have FUN |
 |---|---|---|
 | <img src="pics/16.png" width="240"> | <img src="pics/17.png" width="240"> | <img src="pics/18.png" width="240"> |
