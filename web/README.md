@@ -15,7 +15,7 @@ Serial** to push the sprites to the SD card with the firmware's `PUT` protocol.
 | `firmware/TamaPoke.ino.partitions.bin` | flashed at `0x8000` |
 | `firmware/boot_app0.bin` | flashed at `0xe000` |
 | `firmware/TamaPoke.ino.bin` | the program, flashed at `0x10000` |
-| `sprites.pak`, `sprites-gen2-update.pak`, `sprites-gen3-update.pak` | the three sprite packs (TPAK bundles), see below |
+| `gen1-kanto.pak`, `gen2-johto.pak`, `gen3-hoenn.pak`, `gen4-sinnoh.pak` | the four sprite packs (TPAK bundles), see below |
 
 The firmware is flashed as four parts, **not** as one merged 16 MB image. The merged
 image also contains the empty save-game area and would erase the saved Pokémon even
@@ -25,25 +25,23 @@ Everything else in an Arduino export folder (`.elf`, `.map`, `.merged.bin`,
 `*_flashed.bin`, `sdkconfig`, `flash_args`, `partitions.csv`, `build.options.json`)
 is not used by the page and can be deleted.
 
-## The three sprite packs
+## The four sprite packs
 
 | Pack | File | Size | Contents |
 |---|---|---|---|
-| 1 of 3 | `sprites.pak` | ≈ 70 MB | Pokémon #1–251 |
-| 2 of 3 | `sprites-gen2-update.pak` | ≈ 26 MB | Pokémon #161–251 (update) |
-| 3 of 3 | `sprites-gen3-update.pak` | ≈ 40 MB | Pokémon #252–386 and the complete Pokédex thumbnails |
+| 1 of 4 | `gen1-kanto.pak` | ≈ 42 MB | Generation 1 · Pokémon #1–151 |
+| 2 of 4 | `gen2-johto.pak` | ≈ 29 MB | Generation 2 · Pokémon #152–251 |
+| 3 of 4 | `gen3-hoenn.pak` | ≈ 40 MB | Generation 3 · Pokémon #252–386 |
+| 4 of 4 | `gen4-sinnoh.pak` | ≈ 35 MB | Generation 4 · Pokémon #387–493 |
 
-About 136 MB in total.
+About 147 MB in total.
 
 - Each pack has its own button. If a pack is interrupted, press **its** button again:
   it continues with the file where it stopped. "start this pack over" restarts it.
   The other packs do not have to be repeated.
-- **`thumbs.bin`** is only written by pack 3. Packs 1 and 2 contain an older, shorter
-  version (251 entries); the page skips it, so the order of the packs does not matter
-  and repeating pack 1 or 2 can never overwrite the complete one.
-- At the time of writing, every file in pack 2 is also contained, byte for byte, in
-  pack 1. Pack 2 therefore adds nothing on a card that received pack 1 and only repairs
-  or updates older cards. To drop it, delete its line in the `PACKS` list in `index.html`.
+- **`thumbs.bin`** (the Pokédex thumbnails of all 493 Pokémon) is contained in every pack,
+  always the same complete version. Therefore the order of the packs does not matter and
+  repeating a pack can never overwrite it with an older one.
 
 ## Updating the firmware
 
@@ -68,7 +66,7 @@ cd web && python3 -m http.server 8000
 
 1. **Install TamaPoke** flashes the firmware (pick the USB port; leave "Erase device"
    unticked to keep your Pokémon, tick it on a fresh board).
-2. **Connect board**, then **Load pack 1 / 2 / 3** one after another. Close the step-1
+2. **Connect board**, then **Load pack 1 / 2 / 3 / 4** one after another. Close the step-1
    tab first: only one program can use the port at a time.
 3. Restart the board (hold PWR to switch off, press PWR again), choose your starter
    and play.
@@ -82,7 +80,7 @@ continue with the pack that was interrupted.
 
 - The page works on any static host with HTTPS (for example GitHub Pages).
 - GitHub warns about files above 50 MB and rejects files above 100 MB. The largest
-  pack is about 70 MB.
+  pack is about 42 MB.
 
 All sprites are from PMD SpriteCollab, CC BY-NC (non-commercial sharing with
 attribution is allowed). Pokémon is a ™ of Nintendo / Game Freak. Non-commercial project.

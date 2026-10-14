@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TamaPoke 5.94 · Mrs. Spock - Version - Germany · Installer</title>
+<title>TamaPoke 6.66 · Mrs. Spock - Version - Germany · Installer</title>
 <style>
   :root { --bg:#f2efe1; --ink:#2a2a36; --accent:#4f93c4; --ok:#58b868; --bad:#e8503a; --track:#d8d2bd; }
   * { box-sizing: border-box; }
@@ -45,10 +45,11 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🖖 TamaPoke <span id="ver">5.94</span>
+  <h1>🖖 TamaPoke <span id="ver">6.66</span>
     <span class="edition">Mrs. Spock - Version - Germany</span></h1>
-  <p class="sub">A 386-Pokémon tamagotchi for the Waveshare ESP32-S3-Touch-AMOLED-1.75.
-     Install it from your browser — no Arduino, no drivers.</p>
+  <p class="sub">A 493-Pokémon tamagotchi for the Waveshare ESP32-S3-Touch-AMOLED-1.75.
+     Install it from your browser — no Arduino, no drivers.<br>
+     A fork of Socquique's TamaPoke (original) and with Code of Crenberries428's TamaPoke.</p>
 
   <p class="unsupported" id="unsupported">
     ⚠️ Your browser doesn't support Web Serial. Use <b>Chrome</b> or <b>Edge</b> on a computer.
@@ -71,10 +72,12 @@
   <h2><span class="num">2</span>Load the sprites onto the microSD</h2>
   <div class="step">
     <p>Put a microSD into the board (it formats itself). Press <b>Connect board</b>, then load the
-       <b>three sprite packs</b> one after another — about <span id="totalmb">136</span> MB in total,
+       <b>four sprite packs</b> one after another — about <span id="totalmb">147</span> MB in total,
        roughly 20 minutes. Don't remove the card.</p>
     <p class="note">Close the step-1 install tab first (only one program can use
        the port at a time).</p>
+    <p class="note">If you're having trouble, you can manually copy the “mons” folder from
+       sdCard.zip in the repository to the main folder of your SD card.</p>
     <p class="note">⏱️ The board switches itself off after 5 minutes in Main-Game-Screen and 10 minutes in Clock-Screen without a touch, even on USB.
        <b>Tap its screen every few minutes</b> while loading. If a pack gets interrupted anyway
        (or the board switched off), switch it on again with PWR, press <b>Connect board</b>
@@ -89,8 +92,7 @@
     <pre id="log"></pre>
   </div>
 
-  <h2>How to play</h2>
-  <p>Read in the <a href="https://github.com/Spocky2024/TamaPoke_MrsSpock" target="_blank" rel="noopener">repository</a>.</p>
+  <p>How to play: Read in the <a href="https://github.com/Spocky2024/TamaPoke_MrsSpock" target="_blank" rel="noopener">repository</a>.</p>
 
   <p class="note">Sprites from <a href="https://github.com/PMDCollab/SpriteCollab" target="_blank">PMD SpriteCollab</a> (CC BY-NC).
      Pokémon is a ™ of Nintendo / Game Freak. Non-commercial project.</p>
@@ -99,17 +101,19 @@
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
 <script>
 // ======================================================================
-//  The three sprite packs (TPAK bundles). Sizes are the real file sizes.
-//  thumbs: only the pack that carries the COMPLETE Pokédex thumbnails
-//  (386 entries) may write mons/thumbs.bin. The other two contain an older,
-//  shorter version (251 entries); skipping theirs means the loading order
-//  and repeating a pack can never overwrite the complete one.
+//  The four sprite packs (TPAK bundles), one per generation. Sizes are the
+//  real file sizes in bytes. Every pack carries the COMPLETE Pokédex
+//  thumbnails (mons/thumbs.bin, identical in all four), so the loading order
+//  does not matter and repeating a pack can never overwrite them with an
+//  older version.
 // ======================================================================
 const PACKS = [
-  { file: 'sprites.pak',             label: 'Pack 1 of 3', what: 'Pokémon #1–251 (Generations 1 & 2)',                           mb: 70, thumbs: false },
-  { file: 'sprites-gen2-update.pak', label: 'Pack 2 of 3', what: 'Generation 2 update · Pokémon #161–251',                       mb: 26, thumbs: false },
-  { file: 'sprites-gen3-update.pak', label: 'Pack 3 of 3', what: 'Generation 3 · Pokémon #252–386, plus the Pokédex thumbnails', mb: 40, thumbs: true  },
+  { file: 'gen1-kanto.pak',  label: 'Pack 1 of 4', what: 'Generation 1 - Pokémon #1–151',   bytes: 42440298 },
+  { file: 'gen2-johto.pak',  label: 'Pack 2 of 4', what: 'Generation 2 - Pokémon #152–251', bytes: 28989371 },
+  { file: 'gen3-hoenn.pak',  label: 'Pack 3 of 4', what: 'Generation 3 - Pokémon #252–386', bytes: 40490974 },
+  { file: 'gen4-sinnoh.pak', label: 'Pack 4 of 4', what: 'Generation 4 - Pokémon #387–493', bytes: 34919634 },
 ];
+PACKS.forEach((p) => { p.mb = Math.round(p.bytes / 1e6); });
 // Timing in ms. The firmware gives up on a stalled transfer after 5 s.
 const T = { start: 8000, ack: 8000, done: 30000, resync: 6500, quiet: 500 };
 
@@ -123,7 +127,7 @@ fetch('manifest.json').then((r) => r.json()).then((m) => {
   if (m && m.version) { $('ver').textContent = m.version;
     document.title = 'TamaPoke ' + m.version + ' · Mrs. Spock - Version - Germany · Installer'; }
 }).catch(() => {});
-$('totalmb').textContent = PACKS.reduce((a, p) => a + p.mb, 0);
+$('totalmb').textContent = Math.round(PACKS.reduce((a, p) => a + p.bytes, 0) / 1e6);
 
 const supported = 'serial' in navigator;
 if (!supported) { $('unsupported').style.display = 'block'; $('connect').disabled = true; }
@@ -232,11 +236,7 @@ function parsePak(buf) {
 async function fetchPack(p) {
   const resp = await fetch(p.file);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const items = parsePak(await resp.arrayBuffer());
-  if (p.thumbs) return items;
-  const kept = items.filter((it) => it.name !== 'mons/thumbs.bin');
-  if (kept.length !== items.length) log(`${p.file}: older thumbs.bin skipped (pack 3 carries the complete one)`);
-  return kept;
+  return parsePak(await resp.arrayBuffer());
 }
 
 // per-pack state: items = parsed files (kept after an interruption so a retry
@@ -252,7 +252,7 @@ function buildRows() {
     const top = el('div', 'pack-top');
     const left = el('div');
     const title = el('div', 'pack-title'); title.textContent = p.label;
-    const what = el('div', 'pack-what'); what.textContent = p.what + ' · ≈ ' + p.mb + ' MB';
+    const what = el('div', 'pack-what'); what.textContent = p.what + ' ≈ ' + p.mb + ' MB';
     left.appendChild(title); left.appendChild(what);
     const btn = el('button'); btn.onclick = () => runPack(i, false);
     top.appendChild(left); top.appendChild(btn);
@@ -285,7 +285,7 @@ function refresh() {
   $('conn').textContent = connected ? 'Connected.' : 'Not connected.';
   const all = S.every((s) => s.state === 'done');
   $('alldone').style.display = all ? 'block' : 'none';
-  if (all) $('alldone').textContent = '✅ All three packs are on the card. Now restart the board: hold PWR to switch it off, then press PWR again.';
+  if (all) $('alldone').textContent = '✅ All four packs are on the card. Now restart the board: hold PWR to switch it off, then press PWR again.';
 }
 
 async function runPack(i, fromStart) {
