@@ -7,7 +7,7 @@
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 [![Stars](https://img.shields.io/github/stars/Spocky2024/TamaPoke_MrsSpock?style=flat&logo=github&color=yellow)](https://github.com/Spocky2024/TamaPoke_MrsSpock/stargazers)
 
-A gen-1/2/3 Pokémon-inspired tamagotchi for the
+A gen-1/2/3/4 Pokémon-inspired tamagotchi for the
 **Waveshare ESP32-S3-Touch-AMOLED-1.75** (round 466×466 AMOLED, CO5300 driver
 over QSPI, CST9217 touch over I2C).
 
@@ -20,7 +20,7 @@ Flash it in your browser → **[web installer](https://Spocky2024.github.io/Tama
 **Read more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual.pdf)**
 **or [PDF Anleitung](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Anleitung.pdf)**
 
-- 386 Pokemon from the first to the third generation 
+- 493 Pokemon from the first to the fourth generation 
 - the Pokémon goes to sleep at night; you have to turn off the light until 10 p.m.; don't forget it, or things will turn out badly
 - if you don't take care of it, it's guaranteed to run away - like a Tamagotchi
 - you can collect steps with your Pokémon or send it out alone for 30–60 minutes of random events. You can encounter new Pokémon on your adventures to complete the Pokédex and find Magic Berries
@@ -56,15 +56,8 @@ Flash it in your browser → **[web installer](https://Spocky2024.github.io/Tama
 | Pokemon Details | turn off Light | have FUN |
 |---|---|---|
 | <img src="pics/16.png" width="240"> | <img src="pics/17.png" width="240"> | <img src="pics/18.png" width="240"> |
-  
-First start:
-- swipe down to the clock screen
-- long-tap the clock to set the time und language
-- tap OK to save.
-- long-tap the day to set the day of the week
-- adjustable brightness in clock screen (swipe left or right)
 
-**Read more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual.pdf)**
+**See more in the → [PDF Manual](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Manual.pdf)**
 **or [PDF Anleitung](https://github.com/Spocky2024/TamaPoke_MrsSpock/blob/main/TamaPoke_MrsSpock_Anleitung.pdf)**
 
 > **Personal, non-commercial fan project.** Code is MIT; the sprites are from
