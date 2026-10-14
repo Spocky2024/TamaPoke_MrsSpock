@@ -31,7 +31,7 @@ enum StrId : uint8_t {
   S_RELEASE_FMT, S_YES, S_NO,
   // minijuego y saco
   S_HITS_FMT, S_STR_GAIN_FMT, S_NEW_RECORD, S_RECORD_FMT, S_HIT_FAST,
-  S_ATK_MAX, S_SPD_GAIN_FMT, S_SPD_MAX, S_DEF_GAIN_FMT, S_DEF_MAX, S_WIN_STREAK_FMT, S_CHAMPION_TXT,
+  S_ATK_MAX, S_SPD_GAIN_FMT, S_SPD_MAX, S_DEF_GAIN_FMT, S_DEF_MAX, S_WIN_STREAK_FMT, S_CHAMPION_TXT, S_BATTLE_DMG_FMT,
   S_SCORE_FMT, S_GREAT_JOY, S_PLUS_JOY,
   // reloj / ajustes
   S_SET_TIME, S_HOUR, S_MIN, S_CLOCK_CANCEL, S_LANG_LABEL,
@@ -94,6 +94,7 @@ enum StrId : uint8_t {
   S_VISIT_AWAY,                     // "unterwegs"
   S_SLEEP_CONFIRM_Q, S_SLEEP_CONFIRM_YES, S_SLEEP_CONFIRM_NO,
   S_POKE_CONN_ERROR,  // "Verbindungsfehler" / "Connection error"
+  S_POKE_UNKNOWN1, S_POKE_UNKNOWN2,  // "Unbekanntes" / "Pokemon" (Partner aus einer noch nicht bekannten Generation)
   S_TRIP_LOST_BERRY_TO,  // "-1 Zauberbeere!" / "-1 Magic Berry!" (verschenkt beim Treffen)
   S_VISIT_FIGHTING,  // "Streiterei..." / "Confrontation..."
   S_CLOCK_DELETE_L1, S_CLOCK_DELETE_L2, S_DELETE_CONFIRM1, S_DELETE_CONFIRM2, S_DELETE_CONFIRM3, S_DELETE_DONE1, S_DELETE_DONE2,

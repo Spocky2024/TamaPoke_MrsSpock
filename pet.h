@@ -2,6 +2,10 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include "dex.h"  // DEX_COUNT se usa en tamanos de array mas abajo
+// Bytes des Pokedex-Bitmaps (1 Bit pro Art). Mit DEX_COUNT 493 sind das 62.
+// Ein aelterer, kleinerer Spielstand (49 Bytes) wird per getBytes() in den
+// Anfang des groesseren Puffers geladen -- die Bit-Positionen bleiben gleich.
+#define DEX_REG_BYTES ((DEX_COUNT + 7) / 8)
 
 // 1 tick = 1 minuto de juego. Baja este valor para probar mas rapido
 // (p. ej. 5000UL = las estadisticas caen 12x mas rapido).
@@ -79,6 +83,9 @@ public:
                                         // valor <=10 hasta ahora
   bool perfectDayWasSleeping = false;  // para detectar la transicion
                                          // dormido->despierto (un despertar)
+  bool perfectDayManualClock = false;  // nur waehrend applyClock(): ein durch die
+                                         // manuelle Uhrzeit ausgeloester Schlaf-/Wach-
+                                         // Wechsel zaehlt NICHT (nicht gespeichert)
   uint32_t finalFormSinceEpoch = 0;  // "Endform": desde cuando la especie
                                        // ACTUAL es una forma final (24h
                                        // rodantes); 0 = no es forma final
@@ -135,8 +142,8 @@ public:
   uint32_t lastSeenEpoch = 0;   // ultima hora RTC vista (para progresion offline)
   uint8_t ceremony = CER_NONE;  // despedida/escapada/liberacion en curso
   uint8_t lastEnd = CER_NONE;   // como acabo la anterior (afecta al huevo)
-  uint8_t dexReg[49] = { 0 };       // pokedex de criados (bitmap, ceil(386/8))
-  uint8_t dexMedals[DEX_COUNT + 1] = { 0 };   // por especie (indice 1-386): medallas ganadas
+  uint8_t dexReg[DEX_REG_BYTES] = { 0 };  // pokedex de criados (bitmap, ceil(DEX_COUNT/8))
+  uint8_t dexMedals[DEX_COUNT + 1] = { 0 };   // por especie (indice 1-DEX_COUNT): medallas ganadas
                                      // alguna vez con ella, se queda aunque el bicho
                                      // actual se vaya (persistente, no del individuo)
   uint16_t dexEncounters[DEX_COUNT + 1] = { 0 };  // "Begegnungen": nada lo incrementa aun
@@ -203,7 +210,7 @@ public:
   void loseBond(uint8_t amt) { bond = (bond > amt) ? bond - amt : 0; }
   void requestSave() { save(); }  // wrapper publico: save() es privado
   bool everGot2BerriesOneTrip = false;  // para "Rendezvous": 2 bayas en UN ausflug
-  uint8_t dexShinyReg[49] = { 0 };  // criados en version shiny (bitmap, ceil(386/8))
+  uint8_t dexShinyReg[DEX_REG_BYTES] = { 0 };  // criados en version shiny (bitmap, ceil(DEX_COUNT/8))
   int16_t favorites[3] = { 1, 4, 7 };  // 3 favoritos para la portada del
                                           // pokedex y para el sorteo de huevo
   uint8_t lastPokedexTier = 1;  // ultima etapa avisada (para no repetir el banner)
@@ -330,6 +337,8 @@ public:
   bool release();  // soltar (pulsacion larga + confirmar); false si ya se solto hoy
   void syncClock(uint32_t nowEpoch);  // aplica el tiempo transcurrido apagado
   void setClock(uint32_t nowEpoch);   // fija la hora sin aplicar progresion
+  void setClockManual(uint32_t nowEpoch);  // wie setClock, aber fuer die manuelle Uhr-Einstellung:
+                                             // Schlaf-/Wachwechsel dadurch vergibt keine Medaille
   void guardClockJump(uint32_t deltaMinAbs, uint32_t oldEpoch);  // llamar SOLO tras un ajuste manual desde los
                             // ajustes (nunca desde comandos de depuracion):
                             // evita fabricar dias/rachas/peso-verde de la nada.
@@ -343,6 +352,9 @@ public:
   uint8_t eggCracks() const { return eggTaps; }
   bool eating() const { return millis() < eatUntil; }
   bool showHeart() const { return millis() < heartUntil; }
+  // Restzeit fuer die Optik B (nur lesend, aendert nichts am Spiel)
+  uint32_t eatLeftMs() const { uint32_t n = millis(); return eatUntil > n ? eatUntil - n : 0; }
+  uint32_t heartLeftMs() const { uint32_t n = millis(); return heartUntil > n ? heartUntil - n : 0; }
   bool evolving() const { return millis() < evolveUntil; }
   float evolveT() const {     // progreso de la animacion de evolucion 0..1
     uint32_t n = millis();

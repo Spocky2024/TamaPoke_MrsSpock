@@ -81,6 +81,18 @@ void Pet::newEgg() {
   save();
 }
 
+// Manuelle Uhr-Einstellung (applyClock): reconcileSleepState() kann dabei
+// sofort ein Einschlafen/Aufwachen ausloesen, ohne dass Zeit vergangen ist
+// (Uhr auf 23 Uhr, dann auf 8 Uhr = "Aufwachen" ohne Nacht). Solche Wechsel
+// zaehlen fuer "Toller Tag" nicht: der laufende Zyklus wird entwertet
+// (perfectDayCycleStart = 0), erst das naechste ECHTE Aufwachen startet einen
+// neuen. Ohne Schlafwechsel bleibt der Zyklus unangetastet.
+void Pet::setClockManual(uint32_t nowEpoch) {
+  perfectDayManualClock = true;
+  setClock(nowEpoch);
+  perfectDayManualClock = false;
+}
+
 void Pet::setClock(uint32_t nowEpoch) {
   lastSeenEpoch = nowEpoch;
   reconcileSleepState();  // la hora pudo saltar de golpe (ajuste manual): corrige,
@@ -501,16 +513,19 @@ void Pet::flushSave() {
 // puntos de ramificacion (una especie con mas de una evolucion posible).
 // A nivel de archivo para que evolve() y lineHasUnregistered() compartan
 // la misma tabla.
-struct BranchRule { int16_t from; int16_t opts[5]; uint8_t n; };
+struct BranchRule { int16_t from; int16_t opts[7]; uint8_t n; };
 static const BranchRule BRANCHES[] = {
   { 44,  { 45, 182, 0, 0, 0 }, 2 },   // Gloom -> Vileplume / Bellossom (gen2)
   { 61,  { 62, 186, 0, 0, 0 }, 2 },   // Poliwhirl -> Poliwrath / Politoed (gen2)
   { 79,  { 80, 199, 0, 0, 0 }, 2 },   // Slowpoke -> Slowbro / Slowking (gen2)
-  { 133, { 134, 135, 136, 196, 197 }, 5 },  // Eevee: 3x gen1 + 2x gen2
+  { 133, { 134, 135, 136, 196, 197, 470, 471 }, 7 },  // Eevee: 3x gen1 + 2x gen2 + 2x gen4 (Folipurba, Glaziola)
   { 236, { 106, 107, 237, 0, 0 }, 3 },      // Tyrogue -> Hitmonlee/Hitmonchan/Hitmontop
   { 265, { 266, 268, 0, 0, 0 }, 2 },  // Wurmple -> Silcoon / Cascoon (gen3)
   { 290, { 291, 292, 0, 0, 0 }, 2 },  // Nincada -> Ninjask / Shedinja (gen3)
   { 366, { 367, 368, 0, 0, 0 }, 2 },  // Clamperl -> Huntail / Gorebyss (gen3)
+  { 412, { 413, 414, 0, 0, 0, 0, 0 }, 2 },  // Burmy -> Wormadam / Moterpel (Mothim) (gen4)
+  { 281, { 282, 475, 0, 0, 0, 0, 0 }, 2 },  // Kirlia -> Gardevoir / Galagladi (Gallade) (gen4)
+  { 361, { 362, 478, 0, 0, 0, 0, 0 }, 2 },  // Snorunt -> Glalie / Frosdedje (Froslass) (gen4)
 };
 static const BranchRule *findBranch(int16_t from) {
   for (const BranchRule &br : BRANCHES)
@@ -595,9 +610,9 @@ int16_t Pet::pickEggSpecies() {
   // si la pokedex del tier esta completa, vale cualquiera del tier
   for (int pass = 0; pass < 2; pass++) {
     for (int t = tier; t >= R_COMUN; t--) {
-      int16_t cand[130];
+      int16_t cand[200];
       int n = 0;
-      for (int16_t d = 1; d <= DEX_COUNT && n < 130; d++) {
+      for (int16_t d = 1; d <= DEX_COUNT && n < 200; d++) {
         if (DEX_TBL[d].rarity != t) continue;
         if (pass == 0 && !lineHasUnregistered(d)) continue;
         cand[n++] = d;
@@ -683,6 +698,13 @@ void Pet::checkPerfectDayCycle(uint32_t epoch) {
 
   bool wasSleeping = perfectDayWasSleeping;
   perfectDayWasSleeping = sleeping;
+  if (perfectDayManualClock && wasSleeping != sleeping) {
+    // Wechsel nur durch die manuelle Uhr: nichts vergeben, nichts nachtragen,
+    // laufenden Zyklus entwerten (naechstes echtes Aufwachen startet neu)
+    perfectDayCycleStart = 0;
+    perfectDayClean = true;
+    return;
+  }
   if (wasSleeping && !sleeping) {  // gerade aufgewacht
     if (perfectDayCycleStart && perfectDayClean && !(medals & MED_STREAK7)) {
       medals |= MED_STREAK7;
@@ -968,7 +990,7 @@ void Pet::evolve() {
   const BranchRule *br = findBranch(speciesId);
   if (br) {
     // rama: prefiere la evolucion que aun falte en el pokedex
-    int16_t opts[5];
+    int16_t opts[7];
     int n = 0;
     for (int i = 0; i < br->n; i++)
       if (!isRegistered(br->opts[i])) opts[n++] = br->opts[i];
@@ -1418,6 +1440,11 @@ void Pet::load() {
   lastReleaseDay = prefs.getUInt("relday", 0);
   prefs.getBytes("favs", favorites, sizeof(favorites));
   lastPokedexTier = prefs.getUChar("pdtier", pokedexTierNum());
+  // seit 6.28: wird der Pokedex groesser (z.B. 386 -> 493 Arten), sinkt der
+  // Prozentwert und damit die Stufe. Die zuletzt gemeldete Stufe wird dann auf
+  // die aktuelle gesenkt, damit beim erneuten Erreichen der frueheren Stufen
+  // der Banner "neue Stufe" wieder kommt (sonst waere er bis dahin gesperrt).
+  { uint8_t curTier = pokedexTierNum(); if (lastPokedexTier > curTier) lastPokedexTier = curTier; }
   bond = prefs.getUChar("bond", 0);
   lifeTrAtk = prefs.getUChar("lifeatk", 0);
   lifeTrDef = prefs.getUChar("lifedef", 0);
