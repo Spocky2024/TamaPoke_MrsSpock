@@ -62,6 +62,13 @@ cd web && python3 -m http.server 8000
 # open http://localhost:8000 in Chrome or Edge
 ```
 
+## microSD handling (since 6.73)
+
+The firmware never formats the card by itself at start-up (earlier versions did, so a short contact
+glitch at power-on could wipe all sprites). Before loading a pack the page sends `SDSTAT`; if the
+board cannot read the card, the page asks and only then sends `SDFORMAT`, which formats the card only
+if it cannot be mounted (a readable card is never touched). Older firmware ignores `SDSTAT`.
+
 ## End-user flow
 
 1. **Install TamaPoke** flashes the firmware (pick the USB port; leave "Erase device"

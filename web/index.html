@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TamaPoke 6.66 · Mrs. Spock - Version - Germany · Installer</title>
+<title>TamaPoke 6.78 · Mrs. Spock - Version - Germany · Installer</title>
 <style>
   :root { --bg:#f2efe1; --ink:#2a2a36; --accent:#4f93c4; --ok:#58b868; --bad:#e8503a; --track:#d8d2bd; }
   * { box-sizing: border-box; }
@@ -45,7 +45,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🖖 TamaPoke <span id="ver">6.66</span>
+  <h1>🖖 TamaPoke <span id="ver">6.78</span>
     <span class="edition">Mrs. Spock - Version - Germany</span></h1>
   <p class="sub">A 493-Pokémon tamagotchi for the Waveshare ESP32-S3-Touch-AMOLED-1.75.
      Install it from your browser — no Arduino, no drivers.<br>
@@ -71,11 +71,14 @@
 
   <h2><span class="num">2</span>Load the sprites onto the microSD</h2>
   <div class="step">
-    <p>Put a microSD into the board (it formats itself). Press <b>Connect board</b>, then load the
+    <p>Put a microSD into the board. Press <b>Connect board</b>, then load the
        <b>four sprite packs</b> one after another — about <span id="totalmb">147</span> MB in total,
        roughly 20 minutes. Don't remove the card.</p>
     <p class="note">Close the step-1 install tab first (only one program can use
        the port at a time).</p>
+    <p class="note">💾 A new or blank card is <b>not</b> formatted automatically any more. If the board cannot read
+       the card, this page asks you first and formats it only if you agree (everything on the card is erased).
+       A card that already works is never touched.</p>
     <p class="note">If you're having trouble, you can manually copy the “mons” folder from
        sdCard.zip in the repository to the main folder of your SD card.</p>
     <p class="note">⏱️ The board switches itself off after 5 minutes in Main-Game-Screen and 10 minutes in Clock-Screen without a touch, even on USB.
@@ -197,6 +200,22 @@ async function sendOne(name, data) {
   return { ok: true };
 }
 
+// Asks the firmware (6.73+) whether the microSD is readable. A blank/unreadable card is formatted ONLY
+// after the user agrees. Older firmware ignores the command (timeout) -> carry on as before.
+async function ensureSd() {
+  await writer.write(enc.encode('SDSTAT\n'));
+  let r = await waitFor('OK', 12000);
+  if (r === 'ok' || r === 'timeout') return { ok: true };
+  const yes = window.confirm('The board cannot read the microSD card (no card, blank card or unsupported format).\n\n' +
+    'Format it now? EVERYTHING on the card will be erased.\n\nChoose Cancel if the card holds data you want to keep.');
+  if (!yes) return { ok: false, why: 'The microSD cannot be read and formatting was declined.' };
+  log('Formatting the microSD ... (can take up to a minute)');
+  await writer.write(enc.encode('SDFORMAT\n'));
+  r = await waitFor('OK', 240000);
+  if (r === 'ok') { log('microSD formatted.'); return { ok: true }; }
+  return { ok: false, why: 'The board could not format the microSD (is it inserted?).' };
+}
+
 async function closePort() {
   connected = false; pendingRead = null; lineBuf = '';
   try { if (reader) await reader.cancel(); } catch (e) {}
@@ -295,6 +314,13 @@ async function runPack(i, fromStart) {
   busy = true; s.state = 'busy'; refresh();
   let k = s.next;
   try {
+    const sd = await ensureSd();
+    if (!sd.ok) {
+      s.state = (s.items && s.next > 0) ? 'failed' : 'idle';
+      log(`${p.file}: ${sd.why}`);
+      setStatus(i, sd.why + ' Insert a card and press the button to try again.', 'bad');
+      return;
+    }
     if (!s.items) {
       setStatus(i, `Downloading ${p.file} (≈ ${p.mb} MB) …`);
       s.items = await fetchPack(p);
