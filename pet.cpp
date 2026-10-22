@@ -116,14 +116,23 @@ void Pet::guardClockJump(uint32_t deltaMinAbs, uint32_t oldEpoch) {
   // nicht an verstrichener Zeit -- eine reine Zeitkorrektur soll weder
   // den laufenden Zyklus noch das Durchstreichen veraendern
   //
-  // Top Form / Endform: nur bei einer Korrektur UEBER 2 Stunden (120 Min)
-  // wird die laufende Serie zurueckgesetzt -- das deckt kleine Korrekturen
-  // und eine manuelle Sommer-/Winterzeit-Umstellung (1h) vollstaendig ab,
-  // schuetzt aber weiterhin vor einem groben Vorwaerts-Sprung, der eine
-  // Medaille kuenstlich "erschleichen" wuerde
-  if (deltaMinAbs > 120) {
-    if (finalFormSinceEpoch) finalFormSinceEpoch = lastSeenEpoch;  // idem para "Endform"
-    if (weightGreenSinceEpoch) weightGreenSinceEpoch = lastSeenEpoch;  // la racha de peso se reinicia desde ahora
+  // Top Form / Endform (seit 6.71): Die Startzeit wird um den tatsaechlichen Sprung mitverschoben,
+  // sodass die bisher verstrichene Zeit exakt erhalten bleibt (kein Gewinn, kein Verlust). Vorher
+  // wurde nur ab 120 Min. Sprung zurueckgesetzt -- viele kleine Spruenge liessen sich addieren.
+  // Das deckt auch die Sommer-/Winterzeit-Umstellung ab. Ohne alte Referenzzeit: wie frueher
+  // (grosse Korrektur ueber 2 h = Serie neu starten)
+  if (oldEpoch) {
+    int64_t dl = (int64_t)lastSeenEpoch - (int64_t)oldEpoch;
+    auto shiftStamp = [&](uint32_t &v) {
+      if (!v) return;
+      int64_t n = (int64_t)v + dl;
+      v = (n < 1 || n > (int64_t)lastSeenEpoch) ? lastSeenEpoch : (uint32_t)n;
+    };
+    shiftStamp(finalFormSinceEpoch);
+    shiftStamp(weightGreenSinceEpoch);
+  } else if (deltaMinAbs > 120) {
+    if (finalFormSinceEpoch) finalFormSinceEpoch = lastSeenEpoch;
+    if (weightGreenSinceEpoch) weightGreenSinceEpoch = lastSeenEpoch;
   }
   // Die vier kurzen Cooldowns (5-60 Min) werden bei jeder manuellen
   // Korrektur exakt umgerechnet: die zum Zeitpunkt der Korrektur noch
@@ -136,6 +145,36 @@ void Pet::guardClockJump(uint32_t deltaMinAbs, uint32_t oldEpoch) {
     if (bathCooldownUntilEpoch > oldEpoch) bathCooldownUntilEpoch = lastSeenEpoch + (bathCooldownUntilEpoch - oldEpoch);
     if (caressCooldownUntilEpoch > oldEpoch) caressCooldownUntilEpoch = lastSeenEpoch + (caressCooldownUntilEpoch - oldEpoch);
     if (napCooldownUntilEpoch > oldEpoch) napCooldownUntilEpoch = lastSeenEpoch + (napCooldownUntilEpoch - oldEpoch);
+  }
+  // seit 6.69: Entlass-Sperre wandert mit (Restzeit bleibt erhalten, hoechstens 24 h),
+  // damit Uhrverstellen sie nicht umgeht
+  if (oldEpoch && releaseLockUntilEpoch) {
+    if (releaseLockUntilEpoch > oldEpoch) {
+      uint32_t rem = releaseLockUntilEpoch - oldEpoch;
+      if (rem > 86400UL) rem = 86400UL;
+      releaseLockUntilEpoch = lastSeenEpoch + rem;
+    } else {
+      // schon abgelaufen: loeschen, sonst wuerde ein Zurueckstellen der Uhr sie wieder "in die Zukunft" holen
+      releaseLockUntilEpoch = 0;
+      lastReleaseDay = 0;
+    }
+  }
+  // seit 6.71: Pokemon-Ausflug -- Tageszaehler-Fenster und laufender Ausflug wandern mit (Restzeit bleibt)
+  if (oldEpoch && tripSoloDayEndEpoch) {
+    if (tripSoloDayEndEpoch > oldEpoch) {
+      uint32_t rem = tripSoloDayEndEpoch - oldEpoch;
+      if (rem > 86400UL) rem = 86400UL;
+      tripSoloDayEndEpoch = lastSeenEpoch + rem;
+    } else {
+      tripSoloDayEndEpoch = 0;  // Fenster schon vorbei: Zaehler gilt als abgelaufen
+      tripSoloCount = 0;
+      tripSoloDay = 0;
+    }
+  }
+  if (oldEpoch && tripSoloEndEpoch) {
+    uint32_t rem = (tripSoloEndEpoch > oldEpoch) ? (tripSoloEndEpoch - oldEpoch) : 0;
+    if (rem > TRIP_SOLO_MAX_SEC) rem = TRIP_SOLO_MAX_SEC;
+    tripSoloEndEpoch = lastSeenEpoch + rem;  // rem = 0: bereits fertig, bleibt fertig (abholbar)
   }
   lastCareDay = today();  // el salto no cuenta como dia de racha ganado ni roto
   save();
@@ -164,6 +203,14 @@ void Pet::reconcileSleepState() {
 void Pet::syncClock(uint32_t nowEpoch) {
   uint32_t seen = prefs.getUInt("seen", 0);
   lastSeenEpoch = nowEpoch;
+  // Start mit zurueckgesprungener Uhr (RTC-Reset): Sperren/Fenster, die schon VOR dem Ausschalten abgelaufen
+  // waren (Ende <= letzte gespeicherte Uhrzeit), gelten als abgelaufen -- sonst kaemen sie durch den Rueck-
+  // sprung wieder "in die Zukunft" und sperrten bis zu 24 h unnoetig
+  if (seen && nowEpoch + 60 < seen) {
+    if (releaseLockUntilEpoch && releaseLockUntilEpoch <= seen) { releaseLockUntilEpoch = 0; lastReleaseDay = 0; }
+    if (tripSoloDayEndEpoch && tripSoloDayEndEpoch <= seen) { tripSoloDayEndEpoch = 0; tripSoloCount = 0; tripSoloDay = 0; }
+  }
+  healFutureStamps();  // Zeit kann beim Start zurueckgesprungen sein (RTC-Reset): Zukunftswerte sofort heilen
   advanceWeekday();
   if (nowEpoch == 0) return;
   uint32_t mins = (seen && nowEpoch > seen) ? (nowEpoch - seen) / 60 : 0;
@@ -207,25 +254,30 @@ void Pet::syncClock(uint32_t nowEpoch) {
         }
       }
       if (weight > 0 && ageMinutes % 30 == 0) weight--;
-      if (ageMinutes % 10 == 0) fullness = clamp100((int)fullness - 1);
-      if (ageMinutes % 20 == 0) hygiene = clamp100((int)hygiene - 1 - 10 * poops);
-      if (ageMinutes % 15 == 0) joy = clamp100((int)joy - 1);
+      if (ageMinutes % 15 == 0) fullness = clamp100((int)fullness - 1);   // seit 6.68: alle 15 Min. (vorher 10)
+      if (ageMinutes % 20 == 0) hygiene = clamp100((int)hygiene - 1 - POOP_HYG_SLEEP * poops);  // seit 6.76: 1 je Haeufchen (vorher 10)
+      if (ageMinutes % 20 == 0) joy = clamp100((int)joy - 1);              // seit 6.68: alle 20 Min. (vorher 15)
       continue;
     }
-    if (ageMinutes % 5 == 0) {
-      int hLoss = (tripActive && stepsForHunger) ? 2 : 1;
-      fullness = clamp100((int)fullness - hLoss);
+    if (ageMinutes % 5 == 0) {   // seit 6.68 wie in tick()
+      if (tripActive && stepsForHunger) fullness = clamp100((int)fullness - 2);
+      else if (ageMinutes % 10 == 0) fullness = clamp100((int)fullness - 1);
       stepsForHunger = false;
     }
-    if (ageMinutes % 15 == 0)
-      energy = clamp100((int)energy - (weight >= OVERWEIGHT_FROM ? 2 : 1));
+    {
+      int eLoss = 0;
+      if (weight >= OVERWEIGHT_FROM) { if (ageMinutes % 5 == 0) eLoss += 2; }
+      else if (ageMinutes % 15 == 0) eLoss += 1;
+      if (h >= 20 && h < 22 && ageMinutes % 5 == 0) eLoss += 2;
+      if (eLoss) energy = clamp100((int)energy - eLoss);
+    }
     if (tripActive && ageMinutes % 7 == 0) {
       if (stepsForEnergy) energy = clamp100((int)energy - 2);
       stepsForEnergy = false;
     }
     maybePoop(seen + (uint32_t)(i + 1) * 60);
     if (ageMinutes % 20 == 0) {
-      int poopPenalty = tripActive ? 5 : 10;
+      int poopPenalty = tripActive ? POOP_HYG_TRIP : POOP_HYG_AWAKE;  // seit 6.75: 3 / 5 (vorher 5 / 10)
       hygiene = clamp100((int)hygiene - 1 - poopPenalty * poops);
     }
     if (weight > 0 && ageMinutes % 30 == 0) weight--;
@@ -243,15 +295,15 @@ void Pet::syncClock(uint32_t nowEpoch) {
       goodTicks = 0;
     }
 
-    bool otherZero = (fullness == 0 || energy == 0 || hygiene == 0);
+    bool otherLow = (fullness < 25 || energy < 25 || hygiene < 25);   // seit 6.68 wie in tick()
     if (tripActive) {
-      int joyPeriod = otherZero ? 3 : 5;
-      if (ageMinutes % joyPeriod == 0) {
-        if (!stepsThisInterval) joy = clamp100((int)joy - 1);
+      if (ageMinutes % 5 == 0) {
+        if (stepsThisInterval) joy = clamp100((int)joy + 5);
+        else joy = clamp100((int)joy - 1);
         stepsThisInterval = false;
       }
     } else {
-      if (ageMinutes % 4 == 0) joy = clamp100((int)joy - (otherZero ? 2 : 1));
+      if (ageMinutes % 8 == 0) joy = clamp100((int)joy - (otherLow ? 4 : 1));
     }
 
     checkPerfectDayCycle(seen + (uint32_t)(i + 1) * 60);  // dia simulado de ESTE minuto, no el final
@@ -327,11 +379,18 @@ void Pet::maybePoop(uint32_t epoch) {
   uint32_t day = epoch / 86400;
   if (day != poopDay) { poopDay = day; poopSlotsDone = 0; }
   uint32_t minuteOfDay = (epoch / 60) % 1440;
-  if (minuteOfDay < 480 || minuteOfDay >= 1200) return;  // fuera de 8:00-20:00
-  uint8_t slot = (uint8_t)((minuteOfDay - 480) / 180);   // 0,1,2,3 (franjas de 3h)
+  // seit 6.77: fuenf Fenster 6-11, 11-14, 14-17, 17-20, 20-21:45 Uhr (Minuten ab Mitternacht). Aufgerufen wird nur,
+  // solange das Pokemon WACH ist: schlaeft es, laeuft das Fenster einfach weiter, und das Haeufchen kommt erst nach
+  // dem Aufwachen (Wahrscheinlichkeit 1/Restminuten, also sicher bis Fensterende). Wird das Pokemon im letzten
+  // Fenster schlafen gelegt, verfaellt dessen Haeufchen.
+  static const uint16_t SLOT_START[POOP_SLOTS] = { 360, 660, 840, 1020, 1200 };
+  static const uint16_t SLOT_END[POOP_SLOTS]   = { 660, 840, 1020, 1200, 1305 };
+  int slot = -1;
+  for (int s = 0; s < POOP_SLOTS; s++)
+    if (minuteOfDay >= SLOT_START[s] && minuteOfDay < SLOT_END[s]) { slot = s; break; }
+  if (slot < 0) return;  // ausserhalb 6:00-21:45
   if (poopSlotsDone & (1 << slot)) return;
-  uint32_t slotEnd = 480 + (uint32_t)(slot + 1) * 180;
-  uint32_t remaining = slotEnd - minuteOfDay;  // >=1
+  uint32_t remaining = SLOT_END[slot] - minuteOfDay;  // >=1
   if (poops < 3 && random(remaining) == 0) {
     poops++;
     poopSlotsDone |= (1 << slot);
@@ -397,9 +456,9 @@ void Pet::tick() {
       }
     }
     if (weight > 0 && ageMinutes % 30 == 0) weight--;
-    if (ageMinutes % 10 == 0) fullness = clamp100((int)fullness - 1);
-    if (ageMinutes % 20 == 0) hygiene = clamp100((int)hygiene - 1 - 10 * poops);
-    if (ageMinutes % 15 == 0) joy = clamp100((int)joy - 1);
+    if (ageMinutes % 15 == 0) fullness = clamp100((int)fullness - 1);   // seit 6.68: alle 15 Min. (vorher 10)
+    if (ageMinutes % 20 == 0) hygiene = clamp100((int)hygiene - 1 - POOP_HYG_SLEEP * poops);  // seit 6.76: 1 je Haeufchen (vorher 10)
+    if (ageMinutes % 20 == 0) joy = clamp100((int)joy - 1);              // seit 6.68: alle 20 Min. (vorher 15)
     checkMedals();  // aun puede cruzar un nivel por edad mientras duerme
     if (++ticksSinceSave >= 5) pendingSave = true;
     return;
@@ -409,23 +468,28 @@ void Pet::tick() {
 
   // hambre: -1/5min normal; en ausflug -2/5min si hubo pasos en esa ventana
   // (mismo ritmo base que fuera de ausflug, asi que una sola comprobacion basta)
+  // seit 6.68: normal -1 alle 10 Min.; im Schrittzaehler-Ausflug mit Schritten im Fenster weiter -2 alle 5 Min.
   if (ageMinutes % 5 == 0) {
-    int hLoss = (tripActive && stepsForHunger) ? 2 : 1;
-    fullness = clamp100((int)fullness - hLoss);
+    if (tripActive && stepsForHunger) fullness = clamp100((int)fullness - 2);
+    else if (ageMinutes % 10 == 0) fullness = clamp100((int)fullness - 1);
     stepsForHunger = false;
   }
-  // energia: ritmo normal de fondo (-1/15min, -2 si hay sobrepeso) siempre
-  // activo; en ausflug se suma un extra de -2/7min si hubo pasos en esa
-  // ventana (el solape es de como mucho 1-2 puntos por ciclo, aceptable)
-  if (ageMinutes % 15 == 0)
-    energy = clamp100((int)energy - (weight >= OVERWEIGHT_FROM ? 2 : 1));
+  // energia: seit 6.68 -1/15min; ab Gewicht 67 stattdessen -2/5min; zwischen 20 und 22 Uhr zusaetzlich -2/5min.
+  // En ausflug se suma un extra de -2/7min si hubo pasos en esa ventana
+  {
+    int eLoss = 0;
+    if (weight >= OVERWEIGHT_FROM) { if (ageMinutes % 5 == 0) eLoss += 2; }
+    else if (ageMinutes % 15 == 0) eLoss += 1;
+    if (h >= 20 && h < 22 && ageMinutes % 5 == 0) eLoss += 2;
+    if (eLoss) energy = clamp100((int)energy - eLoss);
+  }
   if (tripActive && ageMinutes % 7 == 0) {
     if (stepsForEnergy) energy = clamp100((int)energy - 2);
     stepsForEnergy = false;
   }
   maybePoop(lastSeenEpoch);
   if (ageMinutes % 20 == 0) {
-    int poopPenalty = tripActive ? 5 : 10;  // en ausflug, la mitad de grave
+    int poopPenalty = tripActive ? POOP_HYG_TRIP : POOP_HYG_AWAKE;  // seit 6.75: 3 / 5 (vorher 5 / 10); im Ausflug milder
     hygiene = clamp100((int)hygiene - 1 - poopPenalty * poops);
   }
   // peso: ritmo normal de fondo (-1/30min) siempre activo; en ausflug se
@@ -449,15 +513,17 @@ void Pet::tick() {
   // la alegria: fuera de ausflug, -1/4min normal, -2/4min si alguna otra
   // necesidad esta en cero. En ausflug: -1 cada 5min (3min si hay un cero),
   // pero SOLO si no hubo pasos en ese intervalo
-  bool otherZero = (fullness == 0 || energy == 0 || hygiene == 0);
+  // seit 6.68: normal -1 alle 8 Min., -4 alle 8 Min. wenn Hunger, Energie oder Hygiene < 25.
+  // Schrittzaehler-Ausflug: alle 5 Min. -1 ohne Schritte im Intervall, +5 mit Schritten
+  bool otherLow = (fullness < 25 || energy < 25 || hygiene < 25);
   if (tripActive) {
-    int joyPeriod = otherZero ? 3 : 5;
-    if (ageMinutes % joyPeriod == 0) {
-      if (!stepsThisInterval) joy = clamp100((int)joy - 1);
+    if (ageMinutes % 5 == 0) {
+      if (stepsThisInterval) joy = clamp100((int)joy + 5);
+      else joy = clamp100((int)joy - 1);
       stepsThisInterval = false;  // reinicia la ventana de deteccion de pasos
     }
   } else {
-    if (ageMinutes % 4 == 0) joy = clamp100((int)joy - (otherZero ? 2 : 1));
+    if (ageMinutes % 8 == 0) joy = clamp100((int)joy - (otherLow ? 4 : 1));
   }
 
   // Descuido: dejar una estadistica por los suelos cuenta como error de
@@ -588,10 +654,10 @@ int16_t Pet::pickEggSpecies() {
     return CLASSIC_DEX[random(NUM_CLASSIC_DEX)];
   }
 
-  // 10% de posibilidades de que sea uno de los 3 favoritos (al azar entre
+  // 15% (seit 6.67; vorher 10%) de posibilidades de que sea uno de los 3 favoritos (al azar entre
   // ellos); si el favorito es una evolucion, se resuelve a su forma base
   // para que sea la que efectivamente eclosiona
-  if (random(100) < 10) {
+  if (random(100) < 15) {
     int16_t fav = favorites[random(3)];
     if (fav >= 1 && fav <= DEX_COUNT) return baseFormOf(fav);
   }
@@ -663,8 +729,10 @@ void Pet::registerCare() {
 }
 
 void Pet::addBond(uint8_t amt) {
-  uint32_t h = lastSeenEpoch ? lastSeenEpoch / 3600 : 0;
-  if (h != bondHourRef) { bondHourRef = h; bondThisHour = 0; }  // nueva hora: se reinicia el tope
+  // seit 6.71: Block = 60 Spielminuten (ageMinutes) statt Kalenderstunde der Uhr: Uhrverstellen setzt das
+  // Limit nicht mehr zurueck. ageMinutes zaehlt nur echte Tick-/Offline-Minuten und beginnt mit dem Schluepfen bei 0
+  uint32_t h = ageMinutes / 60;
+  if (h != bondHourRef) { bondHourRef = h; bondThisHour = 0; }  // neuer Block: Limit zurueck
   if (bondThisHour >= 5) return;  // tope por hora: el vinculo no se farmea
   bond = clamp100(bond + amt);
   bondThisHour += amt;
@@ -785,7 +853,7 @@ void Pet::checkMedals() {
   if ((bigTripDone && stepsSinceHatch >= 10000) || everSoloEvent5) medals |= MED_LV10;  // "Vagabund"
   if (everGot2BerriesOneTrip || everSoloEvent1) medals |= MED_LV25;                   // "Rendezvous"
   if (winStreak >= 10) medals |= MED_LV50;  // "Champion": 10 victorias seguidas sin derrota
-  if (berryLovedCount >= 30) medals |= MED_BERRY;
+  if (berryLovedCount >= BERRY_LOVE_MEDAL) medals |= MED_BERRY;  // "Beeren-Liebe" (seit 6.74: 20 statt 30)
   if (bond >= 100) medals |= MED_BOND;
   // "Endform" (MED_FINAL) ya no se concede aqui: la maneja checkFinalForm12h()
   // de forma autonoma, con el requisito de 24h rodantes
@@ -901,11 +969,57 @@ void Pet::startRunaway() {
   save();
 }
 
+// seit 6.71: Alles, was zeitlich nur in der Vergangenheit oder naher Zukunft liegen kann, aber nach einem
+// Zeitsprung rueckwaerts (RTC-Reset nach leerem Akku, Start mit 01.01.2026) in der Zukunft stuende, wird geheilt
+void Pet::healFutureStamps() {
+  if (!lastSeenEpoch) return;
+  healReleaseLock();
+  if (tripSoloEndEpoch > lastSeenEpoch + TRIP_SOLO_MAX_SEC) tripSoloEndEpoch = lastSeenEpoch + TRIP_SOLO_MAX_SEC;
+  if (tripSoloDayEndEpoch > lastSeenEpoch + 86400UL) tripSoloDayEndEpoch = lastSeenEpoch + 86400UL;
+  if (finalFormSinceEpoch > lastSeenEpoch) finalFormSinceEpoch = lastSeenEpoch;
+  if (weightGreenSinceEpoch > lastSeenEpoch) weightGreenSinceEpoch = lastSeenEpoch;
+}
+
+// seit 6.71: Tageslimit "Pokemon-Ausflug" (5 pro Kalendertag), uhrenfest wie die Entlass-Sperre:
+// Zaehlfenster endet an der naechsten Mitternacht; Uhrverstellen verschiebt es mit der Restzeit
+bool Pet::tripSoloTryCount() {
+  if (!lastSeenEpoch) return true;  // ohne Uhr laesst sich kein Tag messen: kein Limit (wie bei der Entlassung)
+  healFutureStamps();
+  // Altbestand (<= 6.70): Zaehler gehoert zu tripSoloDay, noch ohne Fensterende
+  if (!tripSoloDayEndEpoch && tripSoloDay && tripSoloDay == today())
+    tripSoloDayEndEpoch = (uint32_t)(tripSoloDay + 1) * 86400UL;
+  if (lastSeenEpoch >= tripSoloDayEndEpoch) {  // neues Fenster (auch beim allerersten Mal)
+    tripSoloCount = 0;
+    tripSoloDay = today();
+    tripSoloDayEndEpoch = (uint32_t)(today() + 1) * 86400UL;
+  }
+  if (tripSoloCount >= 5) return false;
+  tripSoloCount++;
+  return true;
+}
+
+// Entlass-Sperre kann nie weiter als 24 h in der Zukunft liegen; alles darueber stammt
+// von einem Zeitsprung (z.B. RTC nach leerem Akku zurueckgesetzt) und wird gekappt
+void Pet::healReleaseLock() {
+  if (lastSeenEpoch && releaseLockUntilEpoch > lastSeenEpoch + 86400UL)
+    releaseLockUntilEpoch = lastSeenEpoch + 86400UL;
+}
+
 bool Pet::release() {
   if (isEgg() || ceremony != CER_NONE) return false;
   uint32_t d = today();
-  if (d && d == lastReleaseDay) return false;  // ya se solto uno hoy
+  // seit 6.69: uhrenfeste Tagessperre. Frueher nur "Tagesnummer == lastReleaseDay";
+  // wer die Uhr auf einen anderen Tag stellte, umging das. Jetzt gilt ein Sperrende
+  // (naechste Mitternacht), das beim manuellen Uhrverstellen mit seiner Restzeit
+  // mitwandert (guardClockJump). Kappung auf 24 h: ein verfaelschter/zurueckgesetzter
+  // Zeitstempel (z.B. RTC nach leerem Akku) sperrt nie laenger als einen Tag
+  if (d) {
+    healReleaseLock();
+    if (lastSeenEpoch < releaseLockUntilEpoch) return false;  // ya se solto uno hoy
+    if (d == lastReleaseDay && !releaseLockUntilEpoch) return false;  // Altbestand ohne Sperrende
+  }
   lastReleaseDay = d;
+  releaseLockUntilEpoch = d ? (uint32_t)(d + 1) * 86400UL : 0;
   lastEnd = CER_RELEASE;
   ceremony = CER_RELEASE;
   ceremonyUntil = millis() + CEREMONY_MS;
@@ -950,6 +1064,7 @@ void Pet::hatch() {
   everGot2BerriesOneTrip = false;  // "Rendezvous": individuo nuevo
   tripSoloCount = 0;       // "Pokemon-Ausflug": Tageslimit fuer das neue Individuum zuruecksetzen
   tripSoloDay = 0;
+  tripSoloDayEndEpoch = 0;
   everSoloEvent1 = false;  // "Rendezvous" (alternativa): individuo nuevo
   everSoloEvent5 = false;  // "Vagabund" (alternativa): individuo nuevo
   weightGreenSinceEpoch = 0;  // racha de peso para "Top Form": empieza de cero
@@ -1030,7 +1145,7 @@ bool Pet::feedBerry(uint8_t color) {
     joy = clamp100(joy + 5);
     heartUntil = millis() + HEART_MS;  // "le encanta!"
     berryKnown = true;                 // descubierto: se muestra en la ficha
-    if (berryLovedCount < 255) berryLovedCount++;  // para la medalla (30 veces)
+    if (berryLovedCount < 255) berryLovedCount++;  // para la medalla (BERRY_LOVE_MEDAL veces)
     addBond(1);
   } else {
     fullness = clamp100(fullness + 20);
@@ -1047,9 +1162,9 @@ bool Pet::feedCandy() {
   if (isEgg() || sleeping) return false;
   if (weight >= 100) return false;  // kugelrund: keine chuches mas
   fullness = clamp100(fullness + 10);
-  joy = clamp100(joy + 10);
-  energy = clamp100(energy + 10);
-  weight = clamp100(weight + 12);  // las chuches pasan factura
+  joy = clamp100(joy + 15);     // seit 6.68: +15 (vorher +10)
+  energy = clamp100(energy + 15);  // seit 6.68: +15 (vorher +10)
+  weight = clamp100(weight + 15);  // seit 6.68: +15 (vorher +12); las chuches pasan factura
   eatUntil = millis() + EAT_ANIM_MS;
   registerCare();
   save();
@@ -1326,6 +1441,7 @@ void Pet::save() {
   prefs.putUShort("bstrk", bestStreak);
   prefs.putUInt("cday", lastCareDay);
   prefs.putUInt("relday", lastReleaseDay);
+  prefs.putUInt("relcd", releaseLockUntilEpoch);
   prefs.putBytes("favs", favorites, sizeof(favorites));
   prefs.putUChar("pdtier", lastPokedexTier);
   prefs.putUChar("bond", bond);
@@ -1337,6 +1453,7 @@ void Pet::save() {
   prefs.putUInt("soloend", tripSoloEndEpoch);
   prefs.putUChar("solocnt", tripSoloCount);
   prefs.putUInt("soloday", tripSoloDay);
+  prefs.putUInt("solodend", tripSoloDayEndEpoch);
   prefs.putBool("soloev1", everSoloEvent1);
   prefs.putBool("soloev5", everSoloEvent5);
   prefs.putUChar("bondtoday", bondThisHour);
@@ -1438,6 +1555,8 @@ void Pet::load() {
   bestStreak = prefs.getUShort("bstrk", 0);
   lastCareDay = prefs.getUInt("cday", 0);
   lastReleaseDay = prefs.getUInt("relday", 0);
+  releaseLockUntilEpoch = prefs.getUInt("relcd", 0);
+  // Altstaende (<= 6.68) ohne Sperrende: release() faellt auf den Tagesvergleich mit lastReleaseDay zurueck
   prefs.getBytes("favs", favorites, sizeof(favorites));
   lastPokedexTier = prefs.getUChar("pdtier", pokedexTierNum());
   // seit 6.28: wird der Pokedex groesser (z.B. 386 -> 493 Arten), sinkt der
@@ -1454,6 +1573,7 @@ void Pet::load() {
   tripSoloEndEpoch = prefs.getUInt("soloend", 0);
   tripSoloCount = prefs.getUChar("solocnt", 0);
   tripSoloDay = prefs.getUInt("soloday", 0);
+  tripSoloDayEndEpoch = prefs.getUInt("solodend", 0);
   everSoloEvent1 = prefs.getBool("soloev1", false);
   everSoloEvent5 = prefs.getBool("soloev5", false);
   bondThisHour = prefs.getUChar("bondtoday", 0);

@@ -19,6 +19,12 @@
 #define CEREMONY_MS 10000UL                // duracion de la despedida en pantalla
 #define FAREWELL_AGE_MIN (3UL * 24 * 60)   // se despide a los 3 dias de juego (en forma final)
 #define RUNAWAY_TICKS 60                   // se escapa tras 1 h con TODO a cero
+#define POOP_SLOTS 5  // seit 6.77: Haeufchen-Fenster 6-11, 11-14, 14-17, 17-20, 20-21:45 Uhr (vorher 4: 8-11 ... 17-20)
+#define POOP_HYG_AWAKE 5  // seit 6.75: Hygiene-Abzug je Haeufchen alle 20 Min., wach/normal (vorher 10)
+#define POOP_HYG_TRIP 3   // seit 6.75: dasselbe im Schrittzaehler-Ausflug (vorher 5)
+#define POOP_HYG_SLEEP 1  // seit 6.76: dasselbe im Schlaf (vorher 10)
+#define BERRY_LOVE_MEDAL 20  // seit 6.74: Lieblingsbeeren fuer die Medaille "Beeren-Liebe" (vorher 30)
+#define TRIP_SOLO_MAX_SEC 3660UL             // laengste Dauer eines Pokemon-Ausflugs (60 Min.) + 60 s Spielraum
 #define OVERWEIGHT_FROM 67                 // > este peso: "thick"/"dick", energia cae mas rapido
 
 // ceremonias de fin de ciclo
@@ -61,7 +67,7 @@ public:
                                      // de por vida de trAtk/trDef/trSpe, NO
                                      // se reinicia en evolve (solo en hatch)
   bool berryKnown = false;  // ya descubrio su baya favorita
-  uint8_t berryLovedCount = 0;  // veces que se le dio su baya favorita (medalla: 30)
+  uint8_t berryLovedCount = 0;  // veces que se le dio su baya favorita (medalla: BERRY_LOVE_MEDAL)
   bool shiny = false;       // variante de color rara (se sortea en el huevo)
   uint32_t ageMinutes = 0;
   int16_t speciesId = -1;      // numero de Pokedex (1-151), -1 = huevo
@@ -129,7 +135,9 @@ public:
                                     // siempre que no se haya cruzado la
                                     // franja de sueno forzado (22-6h)
   uint8_t tripSoloCount = 0;      // veces enviado solo HOY (maximo 5)
-  uint32_t tripSoloDay = 0;       // dia (today()) al que corresponde tripSoloCount
+  uint32_t tripSoloDay = 0;       // dia (today()) al que corresponde tripSoloCount (seit 6.71 nur noch Altbestand/Info)
+  uint32_t tripSoloDayEndEpoch = 0;  // seit 6.71: Ende des Zaehlfensters von tripSoloCount (naechste Mitternacht,
+                                     // RTC-Zeit); beim manuellen Uhrverstellen mit Restzeit mitverschoben
   bool everSoloEvent1 = false;    // alternativa para "Rendezvous"
   bool everSoloEvent5 = false;    // alternativa para "Vagabund"
   bool stepsThisInterval = false;  // se puso a true si hubo pasos desde la
@@ -208,6 +216,8 @@ public:
   // resta vinculo directamente (sin pasar por el tope por hora, que solo
   // aplica a ganancias); nunca baja de 0
   void loseBond(uint8_t amt) { bond = (bond > amt) ? bond - amt : 0; }
+  // fester Bindungsgewinn ohne Stundendeckel (seit 6.68: Pokemon-Ausflug-Ereignisse +5)
+  void addBondFixed(uint8_t amt) { bond = (uint8_t)((bond + amt) > 100 ? 100 : (bond + amt)); }
   void requestSave() { save(); }  // wrapper publico: save() es privado
   bool everGot2BerriesOneTrip = false;  // para "Rendezvous": 2 bayas en UN ausflug
   uint8_t dexShinyReg[DEX_REG_BYTES] = { 0 };  // criados en version shiny (bitmap, ceil(DEX_COUNT/8))
@@ -222,6 +232,8 @@ public:
   uint32_t lastCareDay = 0;
   uint32_t lastReleaseDay = 0;  // ultimo dia en que se "solto" un pokemon
                                   // (limite: solo una vez por dia natural)
+  uint32_t releaseLockUntilEpoch = 0;  // seit 6.69: Entlass-Sperre bis zur naechsten Mitternacht (RTC-Zeit),
+                                         // beim manuellen Uhrverstellen mit Restzeit mitverschoben (guardClockJump)
   // vinculo (del bicho: sube lento con cuidado, se resetea al nacer otro)
   uint8_t bond = 0;
   char nick[24] = "";    // apodo (vacio = nombre de especie); 24 bytes para
@@ -334,6 +346,9 @@ public:
   bool caress();  // tocar al bicho; false si esta en cooldown (o dormido/huevo/ceremonia)
   void eggTap();  // tocar el huevo: 3 toques y eclosiona
   void newEgg();   // empezar de cero con un inicial aleatorio
+  void healReleaseLock();  // Entlass-Sperre auf hoechstens 24 h Zukunft kappen (seit 6.69)
+  void healFutureStamps();  // seit 6.71: Zeitstempel in der Zukunft (z.B. nach RTC-Reset) heilen, beim Start aufgerufen
+  bool tripSoloTryCount();  // seit 6.71: Pokemon-Ausflug-Tageslimit (5): true = erlaubt und mitgezaehlt, false = Limit
   bool release();  // soltar (pulsacion larga + confirmar); false si ya se solto hoy
   void syncClock(uint32_t nowEpoch);  // aplica el tiempo transcurrido apagado
   void setClock(uint32_t nowEpoch);   // fija la hora sin aplicar progresion
@@ -460,7 +475,7 @@ private:
   uint32_t napCooldownUntilEpoch = 0;  // hora RTC hasta la que no se puede hacer otro nap (0 = sin cooldown);
                                         // en epoca real (persistida) para que apagar y encender no sirva de truco
   uint32_t bathCooldownUntilEpoch = 0;  // igual, pero para el bano (30 min)
-  uint8_t poopSlotsDone = 0;   // bitmask: que franjas de caca (0=8-11h,1=11-14h,2=14-17h,3=17-20h) ya paso hoy
+  uint8_t poopSlotsDone = 0;   // bitmask: que franjas de caca (0=6-11h,1=11-14h,2=14-17h,3=17-20h,4=20-21:45h) ya paso hoy
   uint32_t poopDay = 0;        // dia (today()) al que corresponde poopSlotsDone; se reinicia al cambiar de dia
 
   // ventanas horarias del ciclo dia/noche (mismo criterio que sceneHour() del .ino)
@@ -490,7 +505,7 @@ private:
   void advanceWeekday();  // avanza al cruzar la medianoche (llamado desde tick/syncClock)
   void propagateMedalsToChain();  // TODAS las medallas: retroactivo a TODA la
                                     // cadena de formas anteriores
-  void maybePoop(uint32_t epoch);  // 3 cacas/dia repartidas al azar entre 8-20h
+  void maybePoop(uint32_t epoch);  // bis zu 5 Haeufchen/Tag, je eines pro Fenster (6-11, 11-14, 14-17, 17-20, 20-21:45), nur wenn wach
   void tick();
   void hatch();
   void registerSpecies(int16_t dex);

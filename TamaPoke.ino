@@ -34,7 +34,7 @@
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
-#define FW_VERSION "6.66"
+#define FW_VERSION "6.78"
 
 // Pokedex-Regionen. Jede Region beginnt auf einer neuen Seite (16 Arten pro
 // Seite, die letzte Seite einer Region kann halb leer sein): Kanto 10 Seiten,
@@ -95,6 +95,8 @@ PmdMon galleryPmd;  // sprite grande de la vista detalle de la galeria (PMD/TPK2
 PmdMon favPmd[3];   // los tres favoritos en la portada del pokedex
 PmdMon battlePmd;   // sprite del oponente durante un combate
 PmdMon tripPmd;      // sprite del pokemon encontrado en un ausflug
+void drawThumbCentered(const uint8_t *b, int cx, int footY, int s, bool sil);  // seit 6.72
+void tripEnsureSprite(int16_t sp);                                              // seit 6.72
 
 // galeria pokedex
 bool galleryOpen = false;
@@ -317,6 +319,11 @@ int flashIdxForDex(int16_t dex) {
 }
 
 #define CX 233  // centro de la pantalla redonda
+// Training: Boxsack (seit 6.78 ist NUR seine Flaeche die Zaehlzone, vorher der ganze Bildschirm unterhalb y=72).
+// Feste Ruhelage (der Sack schwingt beim Schlag, die Zone wandert nicht mit): Mitte bei CX, Oberkante 86 px.
+#define SACK_W 84
+#define SACK_H 150
+#define SACK_TOP 86
 #define CY 233
 #define PET_CY 202  // centro vertical del sprite
 
@@ -935,7 +942,19 @@ void setup() {
 
 // carga/descarga el sprite de SD cuando cambia la especie
 void ensureMon() {
-  if (pet.speciesId == monFor && monShinyFor == pet.shiny && !sdDirty) return;
+  // seit 6.72: ist das Sprite zur aktuellen Art nicht geladen (SD-Aussetzer), alle 60 s neu versuchen,
+  // statt fuer immer ohne Sprite zu bleiben, bis die Art wechselt oder das Geraet neu startet
+  static uint32_t nextMonRetry = 0;
+  if (pet.speciesId == monFor && monShinyFor == pet.shiny && !sdDirty) {
+    if (!pmd.loaded && !mon.loaded && pet.speciesId >= 1 && pet.speciesId <= DEX_COUNT &&
+        (int32_t)(millis() - nextMonRetry) >= 0) {
+      nextMonRetry = millis() + 60000UL;
+      pmd.load(pet.speciesId, pet.shiny);
+      if (!pmd.loaded) mon.load(pet.speciesId, pet.shiny);
+    }
+    return;
+  }
+  nextMonRetry = millis() + 60000UL;
   sdDirty = false;
   monFor = pet.speciesId;
   monShinyFor = pet.shiny;
@@ -1489,7 +1508,7 @@ void handleTouch() {
     if (pressed && !wasPressed) {
       lastInteract = millis();
       if (y < 72) sackOpen = false;  // tocar arriba = abandonar
-      else sackTap();
+      else if (x >= CX - SACK_W / 2 && x < CX + SACK_W / 2 && y >= SACK_TOP && y < SACK_TOP + SACK_H) sackTap();  // seit 6.78 nur auf dem Sack
     }
     wasPressed = pressed;
     return;
@@ -2558,6 +2577,16 @@ void drawVolcanoB(uint32_t now, bool night, uint16_t top, uint16_t bot) {
 // The sea horizon is higher than HORIZON so there is room for water above the
 // pet; the lower left stays bare (poops land there, see drawPoops).
 #define SEA_TOP 176   // sea horizon y
+// Segelboot (seit 6.67): Bootsmitte faehrt zwischen X_MIN (kurz vor dem Displayrand) und X_MAX (kurz vor der Insel,
+// deren linker Rand bei x ca. 365 liegt) hin und her; ein Weg dauert LEG_MS. PHASE: Start bei x=172, Fahrt nach links.
+#ifndef BEACH_SHIP_X_MIN
+#define BEACH_SHIP_X_MIN 28
+#define BEACH_SHIP_X_MAX 346
+#define BEACH_SHIP_LEG_MS 60000UL
+#define BEACH_SHIP_PHASE 91800UL
+#define BEACH_SHIP_SUN_FADE_OUT 62   // Abstand zur Sonnenmitte (px), ab dem die Segel zu dunkeln beginnen (Rand des Sonnenglanzes)
+#define BEACH_SHIP_SUN_FADE_IN 24    // Abstand, ab dem sie ganz dunkel sind (Boot vor dem Sonnenkern)
+#endif
 
 void drawBeachB(uint32_t now, bool night, int h, uint16_t top, uint16_t bot, uint16_t soil) {
   const int SEAT = SEA_TOP + (gBattleScene ? BATTLE_SEA_ADD : 0);   // im Kampf liegt der Wasserhorizont tiefer
@@ -2578,10 +2607,27 @@ void drawBeachB(uint32_t now, bool night, int h, uint16_t top, uint16_t bot, uin
   sg->fillCircle(408, SEAT + 2, 24, isl);
   sg->fillCircle(380, SEAT + 4, 15, isl);
   if (!night) {
+    // seit 6.67: das Segelboot faehrt ganz gemaechlich zwischen Displayrand und Insel hin und her
+    // (weiches Abbremsen an den Wendepunkten, Boot wird beim Wenden gespiegelt)
     int bob = (int)(sinf(now / 700.0f) * 1.5f);
-    int bx = 172;
-    sg->fillTriangle(bx - 1, SEAT - 22 + bob, bx - 1, SEAT - 4 + bob, bx + 11, SEAT - 4 + bob, C565(0xff, 0xff, 0xff));
-    sg->fillTriangle(bx - 3, SEAT - 17 + bob, bx - 3, SEAT - 4 + bob, bx - 13, SEAT - 4 + bob, lerp565(C565(0xff, 0xff, 0xff), skyAt(SEAT), 1, 4));
+    uint32_t u = (now + BEACH_SHIP_PHASE) % (2UL * BEACH_SHIP_LEG_MS);
+    bool toRight = u < BEACH_SHIP_LEG_MS;
+    float t = (toRight ? u : u - BEACH_SHIP_LEG_MS) / (float)BEACH_SHIP_LEG_MS;
+    float g = 0.5f - 0.5f * cosf(PI * t);                  // 0..1, weich an den Enden
+    int bx = BEACH_SHIP_X_MIN + (int)((BEACH_SHIP_X_MAX - BEACH_SHIP_X_MIN) * (toRight ? g : 1.0f - g));
+    auto sx = [&](int off) { return bx + (toRight ? 2 - off : off); };   // gespiegelt, wenn es nach rechts faehrt
+    // Abendsonne (Mitte x=233): Segel dunkeln beim Einfahren in die Sonne allmaehlich zur Gegenlicht-Silhouette ab
+    // und nehmen beim Herausfahren wieder die normale Farbe an (weich ueber SUN_FADE_OUT .. SUN_FADE_IN px Abstand)
+    int sunK = 0;   // 0..16
+    if (sunset) {
+      float a = (BEACH_SHIP_SUN_FADE_OUT - (float)abs(bx + 1 - 233)) / (BEACH_SHIP_SUN_FADE_OUT - BEACH_SHIP_SUN_FADE_IN);
+      a = a < 0 ? 0 : (a > 1 ? 1 : a);
+      sunK = (int)(a * a * (3 - 2 * a) * 16 + 0.5f);
+    }
+    uint16_t sailMain = lerp565(C565(0xff, 0xff, 0xff), C565(0x8a, 0x5a, 0x4c), sunK, 16);
+    uint16_t sailJib = lerp565(lerp565(C565(0xff, 0xff, 0xff), skyAt(SEAT), 1, 4), C565(0x74, 0x4a, 0x40), sunK, 16);
+    sg->fillTriangle(sx(-1), SEAT - 22 + bob, sx(-1), SEAT - 4 + bob, sx(11), SEAT - 4 + bob, sailMain);
+    sg->fillTriangle(sx(-3), SEAT - 17 + bob, sx(-3), SEAT - 4 + bob, sx(-13), SEAT - 4 + bob, sailJib);
     sg->fillRect(bx - 12, SEAT - 3 + bob, 26, 3, C565(0x7a, 0x4a, 0x30));
   }
 
@@ -4412,13 +4458,13 @@ void renderSack() {
   // aporreo activo
   sackShake *= 0.84f;
   int off = (int)(sackShake * sinf(now * 0.05f));
-  int sx = CX + off, top = 86, sy = 150;
+  int sx = CX + off, top = SACK_TOP, sy = 150;
   gfx->fillRect(CX - 3, 56, 6, top - 56, ink);          // gancho/cuerda
   gfx->fillRect(sx - 4, top - 30, 8, 34, ink);          // cadena
-  gfx->fillRoundRect(sx - 42, top, 84, 150, 26, C565(0xb5, 0x3a, 0x3a));  // saco
-  gfx->fillRoundRect(sx - 42, top, 84, 22, 18, C565(0x7e, 0x28, 0x28));   // tapa
-  gfx->drawRoundRect(sx - 42, top, 84, 150, 26, ink);
-  gfx->fillRect(sx - 42, top + 70, 84, 4, C565(0x7e, 0x28, 0x28));        // costura
+  gfx->fillRoundRect(sx - SACK_W / 2, top, SACK_W, SACK_H, 26, C565(0xb5, 0x3a, 0x3a));  // saco
+  gfx->fillRoundRect(sx - SACK_W / 2, top, SACK_W, 22, 18, C565(0x7e, 0x28, 0x28));   // tapa
+  gfx->drawRoundRect(sx - SACK_W / 2, top, SACK_W, SACK_H, 26, ink);
+  gfx->fillRect(sx - SACK_W / 2, top + 70, SACK_W, 4, C565(0x7e, 0x28, 0x28));        // costura
 
   // contador de golpes
   char buf[8];
@@ -6253,14 +6299,12 @@ void startTrip() {
 // "Pokemon-Ausflug": el bicho se va solo, sin sensor de pasos, con un
 // temporizador de 60-90 min elegido al azar. Maximo 5 veces por dia natural
 void startTripSolo() {
-  uint32_t td = pet.lastSeenEpoch ? pet.lastSeenEpoch / 86400 : 0;
-  if (td != pet.tripSoloDay) { pet.tripSoloDay = td; pet.tripSoloCount = 0; }
-  if (pet.tripSoloCount >= 5) {
+  // seit 6.71: uhrenfestes Tageslimit (siehe Pet::tripSoloTryCount)
+  if (!pet.tripSoloTryCount()) {
     sleepMsgId = S_SOLO_LIMIT; sleepMsgUntil = millis() + 2500;
     sfxPlay(SFX_DENY);
     return;
   }
-  pet.tripSoloCount++;
   uint32_t liveNow = rtcEpoch();
   if (!liveNow) liveNow = pet.lastSeenEpoch;
   pet.tripSoloEndEpoch = liveNow + (uint32_t)(30 + random(31)) * 60;  // 30-60 min al azar
@@ -6430,6 +6474,12 @@ void resolveTripSolo() {
       pet.joy = 30;
       break;
   }
+  // seit 6.68: Bindung je Ereignis (Nr. 1, 2, 3, 5, 6, 8, 9: +5; Nr. 4, 7, 10: -10)
+  {
+    static const int8_t SOLO_BOND[10] = { 5, 5, 5, -10, 5, 5, -10, 5, 5, -10 };
+    if (SOLO_BOND[ev] >= 0) pet.addBondFixed((uint8_t)SOLO_BOND[ev]);
+    else pet.loseBond((uint8_t)(-SOLO_BOND[ev]));
+  }
   if (sp > 0) {
     wasNew = !pet.isRegistered(sp);
     if (wasNew) pet.registerSeen(sp);
@@ -6472,10 +6522,12 @@ void renderTripSoloResult() {
     const DexEntry &d = DEX_TBL[sp];
     if (LOOK_B) drawTripSceneB(biomeFor(sp));  // Optik B: Landschaft 120 px tiefer, Text auf dem Himmel
     else drawScene(biomeFor(sp), millis(), night);
-    if (!tripPmd.loaded) tripPmd.load(sp, false);
+    tripEnsureSprite(sp);
     if (tripPmd.loaded) {
       if (LOOK_B) drawPmdActM(tripPmd, PMD_IDLE, CX, TRIP_PET_Y, millis(), true, false, 3, false);
       else drawPmdActM(tripPmd, PMD_IDLE, CX, 266, millis(), true, false, 4, false);
+    } else if (const uint8_t *tb = thumbs.get(sp)) {  // seit 6.72: Ersatzbild statt leerer Flaeche
+      drawThumbCentered(tb, CX, LOOK_B ? TRIP_PET_Y : 266, LOOK_B ? 3 : 4, false);
     }
     char msg[40];
     snprintf(msg, sizeof(msg), T(S_TRIP_MET_FMT), dexName(sp));
@@ -6706,9 +6758,12 @@ void renderTripResult() {
     gfx->setCursor(CX - (int)strlen(counter) * 6, 34);
     gfx->print(counter);
 
+    tripEnsureSprite(sp);
     if (tripPmd.loaded) {
       if (LOOK_B) drawPmdActM(tripPmd, PMD_IDLE, CX, TRIP_PET_Y, millis(), true, false, 3, false);
       else drawPmdActM(tripPmd, PMD_IDLE, CX, 266, millis(), true, false, 4, false);
+    } else if (const uint8_t *tb = thumbs.get(sp)) {  // seit 6.72: Ersatzbild statt leerer Flaeche
+      drawThumbCentered(tb, CX, LOOK_B ? TRIP_PET_Y : 266, LOOK_B ? 3 : 4, false);
     }
 
     char msg[40];
@@ -6937,6 +6992,44 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
       uint16_t col = sil ? INK_K : (uint16_t)(pal[idx * 2] | (pal[idx * 2 + 1] << 8));
       gfx->fillRect(ox + c * s, oy + r * s, s, s, col);
     }
+  }
+}
+
+// Ersatzbild (seit 6.72): Miniatur mittig auf cx, Fuesse auf footY. Wird nur gezeichnet, wenn das grosse
+// Sprite von der SD nicht geladen werden konnte (frueher: fester Startpunkt, dadurch links oben).
+void drawThumbCentered(const uint8_t *b, int cx, int footY, int s, bool sil) {
+  uint8_t w = b[0], h = b[1], n = b[2];
+  const uint8_t *pal = b + 3;
+  const uint8_t *d = pal + n * 2;
+  int x0 = w, x1 = -1, y1 = -1;
+  for (int r = 0; r < h; r++)
+    for (int c = 0; c < w; c++)
+      if (d[r * w + c] != 0xFF) {
+        if (c < x0) x0 = c;
+        if (c > x1) x1 = c;
+        y1 = r;
+      }
+  if (x1 < 0) return;
+  int ox = cx - ((x0 + x1 + 1) * s) / 2;   // Mitte der gefuellten Spalten auf cx
+  int oy = footY - (y1 + 1) * s;           // unterste gefuellte Zeile auf footY
+  for (int r = 0; r < h; r++) {
+    for (int c = 0; c < w; c++) {
+      uint8_t idx = d[r * w + c];
+      if (idx == 0xFF) continue;
+      uint16_t col = sil ? INK_K : (uint16_t)(pal[idx * 2] | (pal[idx * 2 + 1] << 8));
+      gfx->fillRect(ox + c * s, oy + r * s, s, s, col);
+    }
+  }
+}
+
+// Sprite eines Ausflug-Treffers sicherstellen (seit 6.72): fehlt es, hoechstens alle 4 s neu laden
+// (PmdMon::load wiederholt intern und bindet die SD bei Bedarf neu ein), sonst Ersatzbild.
+void tripEnsureSprite(int16_t sp) {
+  static uint32_t nextTry = 0;
+  if (tripPmd.loaded) return;
+  if ((int32_t)(millis() - nextTry) >= 0) {
+    nextTry = millis() + 4000UL;
+    tripPmd.load(sp, false);
   }
 }
 
@@ -7339,12 +7432,18 @@ void renderGallery() {
     gfx->setTextSize(gts);
     printUmlaut(head, CX - glen * (gts == 3 ? 9 : 6), gts == 3 ? 56 : 60, gts, reg ? d.accent : UI_INK);
     if (!galleryInfoShown) {
+      // seit 6.72: fehlt das grosse Sprite (SD-Aussetzer), alle 4 s neu laden statt dauerhaft Ersatzbild
+      static uint32_t nextGalRetry = 0;
+      if (!galleryPmd.loaded && (int32_t)(millis() - nextGalRetry) >= 0) {
+        nextGalRetry = millis() + 4000UL;
+        galleryPmd.load(galleryDetail, pet.isShinyRegistered(galleryDetail));
+      }
       if (galleryPmd.loaded) {
         // animado y a color si esta registrado; silueta estatica si no (estilo "?")
         drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, reg ? millis() : 0, true, !reg, 6, false);
       } else {
         const uint8_t *t = thumbs.get(galleryDetail);
-        if (t) drawThumb(t, CX - GAL_CELL, 135, 4, !reg);
+        if (t) drawThumbCentered(t, CX, 300, 5, !reg);  // seit 6.72 mittig (frueher fester Startpunkt = links oben)
       }
       // 8 insignias (pokebolas) en circulo alrededor del bicho: una por
       // medalla, a color si esta especie la gano alguna vez, en silueta si no.

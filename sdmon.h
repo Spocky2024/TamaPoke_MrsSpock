@@ -38,7 +38,8 @@ struct PmdMon {
   uint8_t *blob = nullptr;
   PmdAct acts[PMD_NACTS];
 
-  bool load(uint16_t dexNum, bool shiny = false);
+  bool load(uint16_t dexNum, bool shiny = false);  // seit 6.72: mit Wiederholung + SD neu einbinden
+  int loadTry(uint16_t dexNum, bool shiny, const char **why);  // ein Versuch: 0 ok, 1 Datei fehlt, 2 SD/Lesefehler, 3 kaputte Daten, 4 kein PSRAM
   void unload();
   bool has(uint8_t a) const { return loaded && a < PMD_NACTS && acts[a].frames > 0; }
 };
@@ -54,6 +55,9 @@ struct SdThumbs {
 extern SdThumbs thumbs;
 
 bool sdBegin();                 // monta la SD (SDMMC 1-bit), true si hay tarjeta
+bool sdFormatNow();             // seit 6.73: nur auf USB-Befehl SDFORMAT; formatiert nie eine lesbare Karte
+bool sdRemount(uint32_t minGapMs);  // seit 6.72: SD neu einbinden (NIE formatieren); hoechstens alle minGapMs
+void sdDiag(const char *what, uint16_t dex, int attempt, const char *why);  // Fehlerzeile + Speicherstand (Serial)
 bool sdSerialCommand(const String &line);  // PUT/LS por USB; true si la maneja
 extern bool sdReady;
 extern bool sdDirty;  // true tras recibir archivos: recargar sprite
